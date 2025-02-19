@@ -7,6 +7,7 @@
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <print>
 #include <tuple>
 #include <utility>
@@ -60,6 +61,13 @@ public:
                 res |= 1 << x;
         }
         return res;
+    }
+
+    inline auto hash() -> size_t
+    {
+        size_t hash = m_val & 0xFFFFFFFFFFFFFFFF;
+        hash ^= m_val >> 64;
+        return hash;
     }
 
     inline auto game_state() -> GameState
