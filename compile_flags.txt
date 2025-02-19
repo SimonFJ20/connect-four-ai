@@ -1,0 +1,9 @@
+-xc++
+-std=c++23
+-Wall
+-Wextra
+-Wpedantic
+-Wconversion
+-pedantic
+-pedantic-errors
+
