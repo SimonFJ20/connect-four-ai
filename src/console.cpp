@@ -1,4 +1,5 @@
 #include "console.hpp"
+#include <format>
 #include <iostream>
 
 using namespace connect_four;
@@ -12,7 +13,11 @@ void ConsolePrinter::print_board(
 
             switch (board[y * width + x]) {
                 case Tile::Empty:
-                    std::cout << " ";
+                    if (y == 0) {
+                        std::cout << std::format("\x1b[0;90m{}", x);
+                    } else {
+                        std::cout << " ";
+                    }
                     break;
                 case Tile::Red:
                     std::cout << "\x1b[1;91mO";

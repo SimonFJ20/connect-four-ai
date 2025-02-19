@@ -7,7 +7,6 @@
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
-#include <ostream>
 #include <print>
 #include <tuple>
 #include <utility>
@@ -20,6 +19,11 @@ using uint128_t = __uint128_t;
 struct Pos {
     size_t x;
     size_t y;
+
+    inline auto operator+(Pos& other) -> Pos
+    {
+        return Pos { x + other.x, y + other.y };
+    }
 };
 
 static constexpr const size_t tile_size = 2;
@@ -46,6 +50,16 @@ public:
                 return;
             }
         }
+    }
+
+    inline auto possible_moves() -> size_t
+    {
+        size_t res = 0;
+        for (size_t x = 0; x < board_width; ++x) {
+            if (tile({ x, 0 }) == Tile::Empty)
+                res |= 1 << x;
+        }
+        return res;
     }
 
     inline auto game_state() -> GameState
@@ -75,7 +89,11 @@ public:
             for (size_t x = 0; x < board_width; ++x) {
                 for (size_t y = 0; y < board_height; ++y) {
                     bool has_won = true;
-                    auto first_tile = tile(tiles[0]);
+                    auto first_tile = tile(Pos { x, y } + tiles[0]);
+
+                    if (first_tile == Tile::Empty) {
+                        continue;
+                    }
 
                     for (auto [tx, ty] : tiles) {
                         auto current_tile = tile(Pos { x + tx, y + ty });
@@ -130,7 +148,8 @@ private:
 
     inline void set_tile(Pos pos, Tile tile)
     {
-        m_val |= std::to_underlying(tile) << offset(pos) * tile_size;
+        m_val |= static_cast<uint128_t>(std::to_underlying(tile))
+            << offset(pos) * tile_size;
     }
 
     inline auto offset(Pos pos) -> size_t
