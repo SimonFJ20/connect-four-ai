@@ -1,6 +1,9 @@
 #include "board.hpp"
 #include "console.hpp"
 #include "printer.hpp"
+#include <cstdint>
+#include <cstdlib>
+#include <ctime>
 #include <format>
 #include <iostream>
 #include <utility>
@@ -41,7 +44,7 @@ size_t get_move_from_user(Board& board)
         std::cin >> v;
 
         auto possible_moves = board.possible_moves();
-        if ((possible_moves >> v & 1) == 0) {
+        if (!possible_moves.at(v)) {
             std::cout << std::format("invalid input\n> ");
             continue;
         }
@@ -77,6 +80,7 @@ void run_pvp(Printer& printer)
 
 int main()
 {
+    std::srand(static_cast<uint32_t>(std::time(nullptr)));
     auto printer = ConsolePrinter();
     run_pvp(printer);
 }
