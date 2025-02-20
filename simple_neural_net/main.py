@@ -1,14 +1,17 @@
 from __future__ import annotations
 import random as ra
-from math import exp
+from math import exp, floor
 import numpy as np
 from numpy.typing import NDArray
 import copy
 
 # duplicate finder
 
-def sigmoid(i):
-    return 1 / (1 + exp(-i))
+def sigmoid(n: float) -> float:
+    return 1 / (1 + exp(-n))
+
+def clamp(val: float, min_: float, max_: float) -> float:
+    return min(max(val, min_), max_);
 
 M = NDArray
 
@@ -126,15 +129,27 @@ builder.add_layer(12)
 builder.add_layer(12)
 model = builder.build()
 
-for i in range(3000):
-    model = train_best_of_2(model, training_data)
+training_iterations = 10000
+
+progbar_size = 50
+print("[" + " " * progbar_size +  "]   0%", end="", flush=True)
+
+for i in range(100):
+
+    k = floor(i / (100 / progbar_size))
+    print("\b" * (progbar_size + 10) + "[" + "#" * k + " " * (progbar_size - k) + f"] {i:3.0f}%  ", end="", flush=True)
+
+    for _ in range(floor(training_iterations / 100)):
+        model = train_best_of_2(model, training_data)
+
+print("\b" * (progbar_size + 10) +"[" + "#" * progbar_size +  "] 100%")
 
 print("Testing:")
 test_data = make_data(20)
 print("Line\tGuess\tCorrect\tGuess%\tCorrect%\tError")
 for line, correct in test_data:
     [guess] = model.run(input_layer(line))
-    error = abs(correct - guess)
+    error = abs(correct - clamp(guess, 0.0, 1.0))
 
     if error >= 0.5:
         print("\x1b[91m", end="")
