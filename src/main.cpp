@@ -1,5 +1,6 @@
 #include "board.hpp"
 #include "console.hpp"
+#include "deci_tree_ai.hpp"
 #include "printer.hpp"
 #include <cstdint>
 #include <cstdlib>
@@ -78,9 +79,34 @@ void run_pvp(Printer& printer)
     }
 }
 
+void run_ai(Printer& printer)
+{
+    auto board = Board();
+    auto ai = DeciTreeAi(Tile::Red);
+
+    while (true) {
+        std::println("AI's turn");
+        board.print(printer);
+
+        size_t col = ai.next_move(board);
+        board.insert(col, Tile::Red);
+
+        if (check_game_state(board, printer) == ControlFlow::Break)
+            break;
+
+        std::println("Your turn");
+        board.print(printer);
+        col = get_move_from_user(board);
+        board.insert(col, Tile::Blue);
+
+        if (check_game_state(board, printer) == ControlFlow::Break)
+            break;
+    }
+}
+
 int main()
 {
     std::srand(static_cast<uint32_t>(std::time(nullptr)));
     auto printer = ConsolePrinter();
-    run_pvp(printer);
+    run_ai(printer);
 }

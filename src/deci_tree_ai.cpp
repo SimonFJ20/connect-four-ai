@@ -28,11 +28,11 @@ auto DeciTreeAi::next_move(const Board& board) -> size_t
             cand_size += 1;
         }
     }
-    if (candidates.size() == 0) {
+    if (cand_size == 0) {
         std::cerr << "no candidates\n";
         std::exit(EXIT_FAILURE);
     }
-    auto cand_idx = candidates.size() > 1
+    auto cand_idx = cand_size > 1
         ? static_cast<size_t>(std::rand()) % cand_size - 1
         : 0;
     auto [choice, col] = candidates[cand_idx];
