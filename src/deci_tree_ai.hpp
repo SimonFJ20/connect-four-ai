@@ -36,13 +36,13 @@ static inline auto choice_color(Choice choice) -> Color
 [[maybe_unused]]
 static inline auto choice_col(Choice choice) -> uint8_t
 {
-    return choice >> 8;
+    return static_cast<uint8_t>(choice >> 8);
 }
 
 [[maybe_unused]]
 static inline auto choice_depth(Choice choice) -> uint8_t
 {
-    return choice & 0xFF;
+    return static_cast<uint8_t>(choice & 0xFF);
 }
 
 [[maybe_unused]]

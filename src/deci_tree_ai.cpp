@@ -39,7 +39,10 @@ auto DeciTreeAi::next_move(const Board& board) -> size_t
     m_current_choices.push_back(choice);
     return col;
 }
-void report_move(Col col) { }
+void report_move(Col col)
+{
+	(void)col;
+}
 
 auto DeciTreeAi::lookup_choice(Col col) -> std::tuple<Choice, Weight>
 {
