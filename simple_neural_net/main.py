@@ -76,49 +76,6 @@ class ModelBuilder:
 
         return Model(layers, weights)
 
-# class Ai:
-#     def __init__(self) -> None:
-#         self.layer_1_2_weights = np.array([0.5] * (6 * 12))
-#         self.layer_2_3_weights = np.array([0.5] * (12 * 12))
-#         self.layer_3_4_weights = np.array([0.5] * (1 * 12))
-#
-#     def clone(self) -> Ai:
-#         clone = Ai()
-#         clone.layer_1_2_weights = self.layer_1_2_weights.copy()
-#         clone.layer_2_3_weights = self.layer_2_3_weights.copy()
-#         clone.layer_3_4_weights = self.layer_3_4_weights.copy()
-#         return clone
-#
-#     # 1*6
-#     def input_layer(self, line: str) -> M:
-#         return np.array([1.0 if ch == "x" else 0.0 for ch in line])
-#
-#     def calc_layer(self, last: M, in_size: int, weights: M, out_size: int) -> M:
-#         products = np.array([0.0] * out_size)
-#         for j in range(out_size):
-#             products[j] = 1 / (1 + np.exp(last * weights[j*in_size:(j + 1)*in_size]))
-#         return products
-#
-#     def mutate(self) -> None:
-#         match ra.randint(1, 3):
-#             case 1:
-#                 self.mutate_layer(self.layer_1_2_weights)
-#             case 2:
-#                 self.mutate_layer(self.layer_2_3_weights)
-#             case 3:
-#                 self.mutate_layer(self.layer_3_4_weights)
-#
-#     def mutate_layer(self, weights: M) -> None:
-#         i = ra.randint(0, len(weights) - 1)
-#         weights[i] = sigmoid(weights[i] + ra.random() * 2.0 - 1.0)
-#
-#     def guess_dup(self, line: str) -> float:
-#         l1 = self.input_layer(line)
-#         l2 = self.calc_layer(l1, 6, self.layer_1_2_weights, 12)
-#         l3 = self.calc_layer(l2, 12, self.layer_2_3_weights, 12)
-#         l4 = self.calc_layer(l3, 12, self.layer_3_4_weights, 1)
-#         return l4[0]
-
 def rand_line() -> str:
     line = []
     for _ in range(6):
@@ -156,13 +113,12 @@ def train_best_of_2(origo: Model, test_data: Data) -> Model:
 
     ai_1_won = ai_1_mse < ai_2_mse
 
-    print(f"{ai_1_mse}\t{ai_2_mse}\t{"ai_1" if ai_1_won else "ai_2"}")
-
     if ai_1_won:
         return model1
     else:
         return model2
 
+print("Training...")
 training_data = make_data(100)
 
 builder = ModelBuilder(6, 1)
@@ -170,14 +126,20 @@ builder.add_layer(12)
 builder.add_layer(12)
 model = builder.build()
 
-for i in range(1000):
+for i in range(3000):
     model = train_best_of_2(model, training_data)
 
 print("Testing:")
-test_data = make_data(10)
-print("Line\tCorrect\tGuessed\tError")
+test_data = make_data(20)
+print("Line\tGuess\tCorrect\tGuess%\tCorrect%\tError")
 for line, correct in test_data:
     [guess] = model.run(input_layer(line))
     error = abs(correct - guess)
-    print(f"{line}\t{correct}\t{guess:.2f}\t{error:.2f}")
+
+    if error >= 0.5:
+        print("\x1b[91m", end="")
+    else:
+        print("\x1b[92m", end="")
+
+    print(f"{line}\t{"Yes" if guess >= 0.5 else "No"}\t{"Yes" if correct >= 0.5 else "No"}\t{guess:.2f}\t{correct:.2f}\t\t{error:.2f}")
 
