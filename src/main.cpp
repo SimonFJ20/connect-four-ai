@@ -16,7 +16,22 @@ enum class ControlFlow {
     Break,
 };
 
-ControlFlow check_game_state(Board& board, Printer& printer)
+ControlFlow check_game_state(Board& board)
+{
+    switch (board.game_state()) {
+        case GameState::RedWon:
+            return ControlFlow::Break;
+        case GameState::BlueWon:
+            return ControlFlow::Break;
+        case GameState::Draw:
+            return ControlFlow::Break;
+        case GameState::Ongoing:
+            return ControlFlow::Continue;
+    }
+    std::unreachable();
+}
+
+ControlFlow check_game_state_and_print(Board& board, Printer& printer)
 {
     switch (board.game_state()) {
         case GameState::RedWon:
@@ -66,7 +81,7 @@ void run_pvp(Printer& printer)
         col = get_move_from_user(board);
         board.insert(col, Tile::Red);
 
-        if (check_game_state(board, printer) == ControlFlow::Break)
+        if (check_game_state_and_print(board, printer) == ControlFlow::Break)
             break;
 
         std::println("\x1b[1;94mBlue\x1b[0m's turn");
@@ -74,33 +89,62 @@ void run_pvp(Printer& printer)
         col = get_move_from_user(board);
         board.insert(col, Tile::Blue);
 
-        if (check_game_state(board, printer) == ControlFlow::Break)
+        if (check_game_state_and_print(board, printer) == ControlFlow::Break)
             break;
     }
 }
 
 void run_ai(Printer& printer)
 {
-    auto board = Board();
-    auto ai = DeciTreeAi(Tile::Red);
+    auto ai1 = DeciTreeAi(Tile::Red);
+    auto ai2 = DeciTreeAi(Tile::Blue);
+
+    std::println("Training AIs...");
+
+    for (int i = 0; i < 10; ++i) {
+        auto board = Board();
+
+        while (true) {
+            size_t col = ai1.next_move(board);
+            board.insert(col, Tile::Red);
+
+            if (check_game_state(board) == ControlFlow::Break)
+                break;
+
+            col = ai2.next_move(board);
+            board.insert(col, Tile::Blue);
+
+            if (check_game_state(board) == ControlFlow::Break)
+                break;
+        }
+    }
 
     while (true) {
-        std::println("AI's turn");
-        board.print(printer);
+        auto board = Board();
 
-        size_t col = ai.next_move(board);
-        board.insert(col, Tile::Red);
+        while (true) {
+            std::println();
+            std::println("AI's turn");
+            board.print(printer);
 
-        if (check_game_state(board, printer) == ControlFlow::Break)
-            break;
+            size_t col = ai1.next_move(board);
+            board.insert(col, Tile::Red);
 
-        std::println("Your turn");
-        board.print(printer);
-        col = get_move_from_user(board);
-        board.insert(col, Tile::Blue);
+            if (check_game_state_and_print(board, printer)
+                == ControlFlow::Break)
+                break;
 
-        if (check_game_state(board, printer) == ControlFlow::Break)
-            break;
+            std::println();
+            std::println("Your turn");
+            board.print(printer);
+
+            col = get_move_from_user(board);
+            board.insert(col, Tile::Blue);
+
+            if (check_game_state_and_print(board, printer)
+                == ControlFlow::Break)
+                break;
+        }
     }
 }
 

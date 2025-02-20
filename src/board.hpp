@@ -55,7 +55,12 @@ public:
     auto game_state() const -> GameState;
     void print(Printer& printer) const;
 
+    auto hash() const -> size_t;
+    auto flipped_hash() const -> size_t;
+
 private:
+    auto col_hash(Col col) const -> size_t;
+
     inline auto tile(Pos pos) const -> Tile
     {
         return static_cast<Tile>(m_val >> offset(pos) * tile_size & tile_mask);

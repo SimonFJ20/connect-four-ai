@@ -1,4 +1,5 @@
 #include "board.hpp"
+#include "tile.hpp"
 #include <vector>
 
 using namespace connect_four;
@@ -106,4 +107,49 @@ void Board::print(Printer& printer) const
         }
     }
     printer.print_board(board, width, height);
+}
+
+auto Board::hash() const -> size_t
+{
+    static_assert(sizeof(size_t) == sizeof(uint64_t));
+
+    size_t res = 0;
+    for (size_t col = 0; col < width; ++col) {
+        auto col_res = col_hash(col);
+        res |= col_res << 9 * col;
+    }
+    return res;
+}
+
+auto Board::flipped_hash() const -> size_t
+{
+    static_assert(sizeof(size_t) == sizeof(uint64_t));
+
+    size_t res = 0;
+    for (size_t col = width; col < width; ++col) {
+        auto col_res = col_hash(col);
+        res |= col_res << 9 * (width - col - 1);
+    }
+    return res;
+}
+
+auto Board::col_hash(Col col) const -> size_t
+{
+    size_t col_height = 6;
+    size_t hash = 0;
+
+    for (size_t row = 0; row < height; ++row) {
+        switch (tile({ col, row })) {
+            case Tile::Empty:
+                col_height -= 1;
+                break;
+            case Tile::Red:
+                hash |= 1 << row;
+                break;
+            case Tile::Blue:
+                break;
+        }
+    }
+    hash |= col_height << 6;
+    return hash;
 }
