@@ -79,9 +79,11 @@ class ModelBuilder:
 
         return Model(layers, weights)
 
+LINE_LEN = 6
+
 def rand_line() -> str:
     line = []
-    for _ in range(6):
+    for _ in range(LINE_LEN):
         line.append("x" if ra.randint(0, 3) == 3 else "-")
     return "".join(line)
 
@@ -92,7 +94,7 @@ DataEntry = tuple[str, float]
 Data = list[DataEntry]
 
 def make_data(n: int) -> Data:
-    return [(line, 1.0 if has_dups(line) else 0.0)for line in [rand_line() for _ in range(n)]]
+    return [(line, 1.0 if has_dups(line) else 0.0) for line in [rand_line() for _ in range(n)]]
 
 def input_layer(line: str) -> list[float]:
     return [1.0 if ch == "x" else 0.0 for ch in line]
@@ -124,12 +126,12 @@ def train_best_of_2(origo: Model, test_data: Data) -> Model:
 print("Training...")
 training_data = make_data(100)
 
-builder = ModelBuilder(6, 1)
+builder = ModelBuilder(LINE_LEN, 1)
 builder.add_layer(12)
 builder.add_layer(12)
 model = builder.build()
 
-training_iterations = 10000
+training_iterations = 1000
 
 progbar_size = 50
 print("[" + " " * progbar_size +  "]   0%", end="", flush=True)
