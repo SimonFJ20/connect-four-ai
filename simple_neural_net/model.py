@@ -4,8 +4,10 @@ import random as ra
 
 # weight = inputs[in] * weights[in][out]
 
-
 Arr = np.typing.NDArray[np.float64]
+
+def sigmoid(x: Arr) -> Arr:
+    return 1 / (1 + np.exp(-x))
 
 class Model:
     def __init__(self, layer_sizes: list[int], weights: list[Arr]) -> None:
@@ -16,18 +18,23 @@ class Model:
         outputs = inputs
 
         for layer_idx in range(len(self.layer_sizes) - 1):
-            outputs = (outputs * self.weights[layer_idx].transpose()).sum()
+            sum = (outputs * self.weights[layer_idx].transpose()).sum()
+            # outputs = 1 / (1 - np.exp(sum))
+            outputs = sum
 
         return outputs
 
-    # def mutate(self) -> None:
-    #     for layer_weights in self.weights:
-    #         mutation = (np.random.random(layer_weights.shape) - 0.5) * 2
-    #         sign = mutation / abs(mutation);
-    #         mutation = pow(mutation, 2) * sign
-    #         layer_weights += mutation
-
     def mutate(self) -> None:
+        # for layer_weights in self.weights:
+        #     mutation = (np.random.random(layer_weights.shape) - 0.5) * 2
+        #     sign = mutation / abs(mutation);
+        #     mutation = pow(mutation, 2) * sign
+        #     layer_weights += mutation
+
+        # for layer_weights in self.weights:
+        #     mutation = np.random.random(layer_weights.shape) * 0.4 - 0.2
+        #     layer_weights += mutation
+
         i = ra.randint(0, len(self.weights) - 1)
         (inputs, outputs) = self.weights[i].shape
 
