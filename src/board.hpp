@@ -31,7 +31,10 @@ public:
     {
     }
 
-    inline auto at(size_t i) const -> bool { return m_raw >> i & 1; }
+    inline auto at(size_t i) const -> bool
+    {
+        return m_raw >> i & 1;
+    }
 
 private:
     size_t m_raw;
@@ -43,6 +46,21 @@ enum class GameState {
     Draw,
     Ongoing,
 };
+
+enum class Color : uint8_t {
+    Red,
+    Blue,
+};
+
+[[maybe_unused]] inline auto color_win_state(Color color) -> GameState
+{
+    return color == Color::Red ? GameState::RedWon : GameState::BlueWon;
+}
+
+[[maybe_unused]] inline auto color_lose_state(Color color) -> GameState
+{
+    return color == Color::Red ? GameState::BlueWon : GameState::RedWon;
+}
 
 class Board {
 public:

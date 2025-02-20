@@ -27,8 +27,8 @@ void Board::insert(Col col, Tile tile)
 
 auto Board::is_draw() const -> bool
 {
-    for (size_t x = 0; x < width; ++x) {
-        if (this->tile({ .col = x, .row = height - 1 }) == Tile::Empty) {
+    for (size_t col = 0; col < width; ++col) {
+        if (this->tile({ .col = col, .row = 0 }) == Tile::Empty) {
             return false;
         }
     }

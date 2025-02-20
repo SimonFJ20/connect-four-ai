@@ -7,6 +7,8 @@
 #include <ctime>
 #include <format>
 #include <iostream>
+#include <ostream>
+#include <print>
 #include <utility>
 
 using namespace connect_four;
@@ -20,10 +22,19 @@ class Program {
 private:
     ConsolePrinter printer;
 
+    DeciTreeAi ai1;
+    DeciTreeAi ai2;
+
 public:
+    Program()
+        : ai1(Tile::Red)
+        , ai2(Tile::Blue)
+    {
+    }
+
     void run()
     {
-        run_ai(printer);
+        run_ais_against_each_other(printer);
     }
 
 private:
@@ -105,33 +116,78 @@ private:
         }
     }
 
-    void run_ai(Printer& printer)
+    void run_ais_against_each_other(Printer& printer)
     {
-        auto ai1 = DeciTreeAi(Tile::Red);
-        auto ai2 = DeciTreeAi(Tile::Blue);
+        constexpr auto training_iters = 1'000'000;
 
-        std::println("Training AIs...");
+        auto l = std::locale("en_DK.UTF-8");
+        std::cout << std::format(
+            l, "Training AIs for {:L} iterations...\n", training_iters);
 
-        for (int i = 0; i < 10; ++i) {
+        for (int i = 0; i < training_iters; ++i) {
             auto board = Board();
+
+            ai1.new_game();
+            ai2.new_game();
 
             while (true) {
                 size_t col = ai1.next_move(board);
                 board.insert(col, Tile::Red);
 
-                if (check_game_state(board) == ControlFlow::Break)
+                if (handle_ai_traning_game_state(board, ai1, ai2)
+                    == ControlFlow::Break)
                     break;
-
                 col = ai2.next_move(board);
                 board.insert(col, Tile::Blue);
 
-                if (check_game_state(board) == ControlFlow::Break)
+                if (handle_ai_traning_game_state(board, ai2, ai1)
+                    == ControlFlow::Break)
                     break;
             }
         }
 
+        std::println("ai nr\tsize in entries\tsize in bytes");
+        std::cout << std::format(
+            l, "1\t{:L}\t\t{:L}\n", ai1.model_entries(), ai1.model_size());
+        std::cout << std::format(
+            l, "2\t{:L}\t\t{:L}\n", ai2.model_entries(), ai2.model_size());
+
+        for (;;) {
+            auto board = Board();
+
+            ai1.new_game();
+            ai2.new_game();
+
+            while (true) {
+                board.print(printer);
+                std::println("Red's turn");
+                fgetc(stdin);
+
+                size_t col = ai1.next_move(board);
+                board.insert(col, Tile::Red);
+
+                if (check_game_state_and_print(board) == ControlFlow::Break)
+                    break;
+
+                board.print(printer);
+                std::println("Blue's turn");
+                fgetc(stdin);
+
+                col = ai2.next_move(board);
+                board.insert(col, Tile::Blue);
+
+                if (check_game_state_and_print(board) == ControlFlow::Break)
+                    break;
+            }
+            std::println("Game finished.");
+            board.print(printer);
+            std::println("\n");
+        }
+
         while (true) {
             auto board = Board();
+
+            ai1.new_game();
 
             while (true) {
                 std::println();
@@ -155,6 +211,28 @@ private:
                     break;
             }
         }
+    }
+
+    ControlFlow handle_ai_traning_game_state(
+        Board& board, DeciTreeAi& turnee, DeciTreeAi& other)
+    {
+        auto state = board.game_state();
+        if (state == color_win_state(turnee.color())) {
+            turnee.report_win();
+            other.report_loss();
+            return ControlFlow::Break;
+        }
+        if (state == color_lose_state(turnee.color())) {
+            turnee.report_loss();
+            other.report_win();
+            return ControlFlow::Break;
+        }
+        if (state == GameState::Draw) {
+            turnee.report_draw();
+            other.report_draw();
+            return ControlFlow::Break;
+        }
+        return ControlFlow::Continue;
     }
 };
 

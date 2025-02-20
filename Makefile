@@ -31,10 +31,12 @@ CPP_FILES =     \
 
 O_FILES = $(patsubst %.cpp,build/%.o,$(CPP_FILES))
 
+all: build_dir game
+
 game: $(O_FILES)
 	g++ -o build/$@ $^ $(FEATURE_FLAGS) $(OPTIMIZATION)
 
-build/%.o: src/%.cpp build_dir $(HEADERS)
+build/%.o: src/%.cpp $(HEADERS)
 	g++ $< -c -o $@ $(CPP_FLAGS) $(OPTIMIZATION) $(FEATURE_FLAGS)
 
 build_dir:

@@ -10,7 +10,7 @@ auto DeciTreeAi::next_move(const Board& board) -> size_t
 {
     auto possible_moves = board.possible_moves();
 
-    int cand_weight = 0;
+    int cand_weight = INT32_MIN;
     auto candidates = std::array<std::tuple<Choice, Col>, 8>();
     size_t cand_size = 0;
 
@@ -42,11 +42,6 @@ auto DeciTreeAi::next_move(const Board& board) -> size_t
     return col;
 }
 
-void report_move(Col col)
-{
-    (void)col;
-}
-
 auto DeciTreeAi::lookup_choice(Board board) -> std::tuple<Choice, Weight>
 {
     auto choice = board.hash();
@@ -64,6 +59,11 @@ auto DeciTreeAi::lookup_choice(Board board) -> std::tuple<Choice, Weight>
 auto DeciTreeAi::choice_is_candidate(int weight, int cand_weight) const -> bool
 {
     return weight + 2 >= cand_weight;
+}
+
+void DeciTreeAi::new_game()
+{
+    m_current_choices.clear();
 }
 
 void DeciTreeAi::report_win()
