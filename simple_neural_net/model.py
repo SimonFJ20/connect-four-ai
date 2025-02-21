@@ -19,51 +19,24 @@ class Model:
         outputs = inputs
 
         for layer_idx in range(len(self.layer_sizes) - 1):
-            # print("outputs:\n", outputs)
-            # print("self.weights[layer_idx]:\n", self.weights[layer_idx])
-            # print("self.weights[layer_idx].transpose():\n", self.weights[layer_idx].transpose())
             products = outputs * self.weights[layer_idx].transpose()
-            # print("products:\n", products)
-            # print("self.biases[layer_idx]:\n", self.biases[layer_idx])
             values = products + self.biases[layer_idx]
-            # print("values:\n", values)
             sums = values.sum(axis=1)
-            # print("sums:\n", sums)
             normalized = sigmoid(sums)
-            # print("normalized:\n", normalized)
             outputs = normalized
-            # exit(0)
 
         return outputs
 
     def mutate(self) -> None:
-        # for layer_weights in self.weights:
-        #     mutation = (np.random.random(layer_weights.shape) - 0.5) * 2
-        #     sign = mutation / abs(mutation);
-        #     mutation = pow(mutation, 2) * sign
-        #     layer_weights += mutation
-
         weight_mag = 1.0
-        bias_mag = 1.0
-
         for layer_weights in self.weights:
             mutation = np.random.random(layer_weights.shape) * weight_mag - (weight_mag / 2)
             layer_weights += mutation
 
+        bias_mag = 2.0
         for layer_bias in self.biases:
             mutation = np.random.random(layer_bias.shape) * bias_mag - (bias_mag / 2)
             layer_bias += mutation
-
-
-        # i = ra.randint(0, len(self.weights) - 1)
-        # (inputs, outputs) = self.weights[i].shape
-        #
-        # j = ra.randint(0, inputs - 1)
-        # k = ra.randint(0, outputs - 1)
-        # self.weights[i][j, k] += ra.random() * weight_mag - (weight_mag / 2)
-        #
-        # l = ra.randint(0, inputs - 1)
-        # self.biases[i][l] += ra.random() * bias_mag - (bias_mag / 2)
 
     def clone(self) -> Model:
         return Model(
