@@ -22,7 +22,9 @@ inline auto color_to_tile(Color color) -> Tile
     std::unreachable();
 }
 
-using Weight = int;
+using Weight = int16_t;
+[[maybe_unused]] static const constexpr Weight weight_max = INT16_MAX;
+[[maybe_unused]] static const constexpr Weight weight_min = INT16_MIN;
 using ColWeights = std::array<Weight, Board::width>;
 using Choice = std::tuple<Board::Hash, Col>;
 
@@ -61,9 +63,9 @@ public:
 private:
     auto lookup_choices(Board board)
         -> std::tuple<Board::Hash, const ColWeights*>;
-    auto choice_is_candidate(int weight, int cand_weight) const -> bool;
+    auto choice_is_candidate(Weight weight, Weight cand_weight) const -> bool;
 
-    void reward_punish_current_choices(int reward);
+    void reward_punish_current_choices(Weight reward);
 
     std::unordered_map<Board::Hash, ColWeights> m_choice_weights {};
 

@@ -118,7 +118,7 @@ private:
 
     void run_ais_against_each_other(Printer& printer)
     {
-        constexpr auto training_iters = 100'000;
+        constexpr auto training_iters = 1'000'000;
 
         auto l = std::locale("en_DK.UTF-8");
         std::cout << std::format(
@@ -137,6 +137,7 @@ private:
                 if (handle_ai_traning_game_state(board, ai1, ai2)
                     == ControlFlow::Break)
                     break;
+
                 col = ai2.next_move(board);
                 board.insert(col, Tile::Blue);
 

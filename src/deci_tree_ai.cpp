@@ -11,7 +11,7 @@ auto DeciTreeAi::next_move(const Board& board) -> size_t
     auto [hash, weights] = lookup_choices(board);
     auto possible_moves = board.possible_moves();
 
-    int cand_weight = INT32_MIN;
+    Weight cand_weight = INT16_MIN;
     auto candidates = std::array<Col, Board::width>();
     size_t cand_size = 0;
 
@@ -19,7 +19,7 @@ auto DeciTreeAi::next_move(const Board& board) -> size_t
         if (!possible_moves.at(col))
             continue;
 
-        int weight = weights->at(col);
+        auto weight = weights->at(col);
         if (weight > cand_weight) {
             cand_weight = weight;
             cand_size = 0;
@@ -56,7 +56,8 @@ auto DeciTreeAi::lookup_choices(Board board)
     return { hash, &m_choice_weights.at(hash) };
 }
 
-auto DeciTreeAi::choice_is_candidate(int weight, int cand_weight) const -> bool
+auto DeciTreeAi::choice_is_candidate(Weight weight, Weight cand_weight) const
+    -> bool
 {
     return weight + 2 >= cand_weight;
 }
@@ -78,12 +79,20 @@ void DeciTreeAi::report_loss()
 
 void DeciTreeAi::report_draw()
 {
-    reward_punish_current_choices(std::rand() % 5 - 2);
+    reward_punish_current_choices(static_cast<Weight>(std::rand()) % 5 - 2);
 }
 
-void DeciTreeAi::reward_punish_current_choices(int reward)
+void DeciTreeAi::reward_punish_current_choices(Weight reward)
 {
     for (auto [hash, col] : m_current_choices) {
-        m_choice_weights.at(hash).at(col) += reward;
+        auto& weight = m_choice_weights.at(hash).at(col);
+        int64_t val = weight;
+        if (val + reward < weight_min) {
+            weight = weight_min;
+        } else if (val + reward > weight_max) {
+            weight = weight_max;
+        } else {
+            weight += reward;
+        }
     }
 }
