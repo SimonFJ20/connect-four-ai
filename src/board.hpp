@@ -73,7 +73,8 @@ public:
     auto game_state() const -> GameState;
     void print(Printer& printer) const;
 
-    auto hash() const -> size_t;
+    using Hash = size_t;
+    auto hash() const -> Hash;
     auto flipped_hash() const -> size_t;
 
 private:

@@ -23,7 +23,8 @@ inline auto color_to_tile(Color color) -> Tile
 }
 
 using Weight = int;
-using Choice = size_t;
+using ColWeights = std::array<Weight, Board::width>;
+using Choice = std::tuple<Board::Hash, Col>;
 
 /// AI using decision tree strategy, like the one used for tic tac toe
 class DeciTreeAi {
@@ -53,21 +54,20 @@ public:
 
     auto model_size() const -> size_t
     {
-        auto amount_of_element = model_entries();
-        auto estimated_entry_size = sizeof(Choice) + sizeof(Weight);
-        auto estimated_byte_size = amount_of_element * estimated_entry_size;
-        return estimated_byte_size;
+        auto estimated_entry_size = sizeof(Board::Hash) + sizeof(ColWeights);
+        return model_entries() * estimated_entry_size;
     }
 
 private:
-    auto lookup_choice(Board board) -> std::tuple<Choice, Weight>;
+    auto lookup_choices(Board board)
+        -> std::tuple<Board::Hash, const ColWeights*>;
     auto choice_is_candidate(int weight, int cand_weight) const -> bool;
 
     void reward_punish_current_choices(int reward);
 
-    std::unordered_map<size_t, Weight> m_choice_weights {};
+    std::unordered_map<Board::Hash, ColWeights> m_choice_weights {};
 
-    std::vector<size_t> m_current_choices {};
+    std::vector<Choice> m_current_choices {};
 
     Color m_color;
 };

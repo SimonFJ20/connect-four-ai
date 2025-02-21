@@ -109,7 +109,7 @@ void Board::print(Printer& printer) const
     printer.print_board(board, width, height);
 }
 
-auto Board::hash() const -> size_t
+auto Board::hash() const -> Hash
 {
     static_assert(sizeof(size_t) == sizeof(uint64_t));
 

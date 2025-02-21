@@ -118,7 +118,7 @@ private:
 
     void run_ais_against_each_other(Printer& printer)
     {
-        constexpr auto training_iters = 1'000'000;
+        constexpr auto training_iters = 100'000;
 
         auto l = std::locale("en_DK.UTF-8");
         std::cout << std::format(
@@ -151,6 +151,8 @@ private:
             l, "1\t{:L}\t\t{:L}\n", ai1.model_entries(), ai1.model_size());
         std::cout << std::format(
             l, "2\t{:L}\t\t{:L}\n", ai2.model_entries(), ai2.model_size());
+
+        std::exit(0);
 
         for (;;) {
             auto board = Board();
