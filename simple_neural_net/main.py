@@ -40,8 +40,8 @@ def train_best_of_2(origo: Model, test_data: Data, plotter: ModelPlotter) -> Mod
     ai_1_acc_err = 0
     ai_2_acc_err = 0
     for line, correct in test_data:
-        ai_1_result = model1.run(input_layer(line))
-        ai_2_result = model2.run(input_layer(line))
+        ai_1_result = model1.run(input_layer(line))[0]
+        ai_2_result = model2.run(input_layer(line))[0]
 
         ai_1_acc_err += pow(correct - ai_1_result, 2)
         ai_2_acc_err += pow(correct - ai_2_result, 2)
@@ -58,6 +58,15 @@ def train_best_of_2(origo: Model, test_data: Data, plotter: ModelPlotter) -> Mod
     else:
         return model2
 
+# builder = ModelBuilder(LINE_LEN, 1)
+# builder.add_layer(12)
+# builder.add_layer(12)
+# model = builder.build()
+#
+# model.run(input_layer("--xx--"))
+#
+# exit(0)
+
 print("Training...")
 training_data = make_data(100)
 
@@ -68,7 +77,7 @@ model = builder.build()
 
 plotter = ModelPlotter()
 
-training_iterations = 1000
+training_iterations = 10000
 
 bar = Progbar(100)
 bar.print_initial()
@@ -85,7 +94,7 @@ print("Line\tGuess\tCorrect\tGuess%\tCorrect%\tError")
 acc_err = 0
 fails = 0
 for i, [line, correct] in enumerate(test_data):
-    guess = model.run(input_layer(line))
+    guess = model.run(input_layer(line))[0]
     error = abs(correct - clamp(float(guess), 0.0, 1.0))
     acc_err += error
 

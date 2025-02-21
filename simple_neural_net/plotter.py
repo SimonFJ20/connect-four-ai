@@ -11,7 +11,8 @@ class ModelPlotter:
         fig, ax = plt.subplots()
 
         ax.plot(range(len(self.loss_entries)), self.loss_entries, label="Loss")
-        ax.set(xlabel="Iterations", ylabel="Loss", title="Loss over time", yscale="log")
+        # ax.set(xlabel="Iterations", ylabel="Loss", title="Loss over time", yscale="log")
+        ax.set(xlabel="Iterations", ylabel="Loss", title="Loss over time")
         ax.grid()
 
         plt.show()
