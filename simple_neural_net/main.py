@@ -6,6 +6,7 @@ import numpy as np
 # from old_model import * 
 from model import *
 from progbar import Progbar
+from plotter import ModelPlotter
 
 
 # duplicate finder
@@ -31,7 +32,7 @@ Data = list[DataEntry]
 def make_data(n: int) -> Data:
     return [(line, 1.0 if has_dups(line) else 0.0) for line in [rand_line() for _ in range(n)]]
 
-def train_best_of_2(origo: Model, test_data: Data) -> Model:
+def train_best_of_2(origo: Model, test_data: Data, plotter: ModelPlotter) -> Model:
     model1 = origo.clone()
     model2 = origo.clone()
     model2.mutate()
@@ -50,6 +51,8 @@ def train_best_of_2(origo: Model, test_data: Data) -> Model:
 
     ai_1_won = ai_1_mse < ai_2_mse
 
+    plotter.log_loss(min(ai_1_mse, ai_2_mse))
+
     if ai_1_won:
         return model1
     else:
@@ -63,6 +66,8 @@ builder.add_layer(12)
 builder.add_layer(12)
 model = builder.build()
 
+plotter = ModelPlotter()
+
 training_iterations = 1000
 
 bar = Progbar(100)
@@ -70,7 +75,7 @@ bar.print_initial()
 for i in range(100):
     bar.print_iter(i / 100);
     for _ in range(math.floor(training_iterations / 100)):
-        model = train_best_of_2(model, training_data)
+        model = train_best_of_2(model, training_data, plotter)
 
 bar.print_finished();
 
@@ -98,4 +103,6 @@ print(f"total:\t{len(test_data)}")
 print(f"fails:\t{fails}")
 print(f"fail rate: {fail_rate:.2f}")
 print(f"mean error: {mean_err:.2f}")
+
+plotter.show_loss_curve()
 
