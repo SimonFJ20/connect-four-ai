@@ -80,18 +80,23 @@ for i in range(100):
 bar.print_finished();
 
 print("Testing:")
-test_data = make_data(30)
+test_data = make_data(10_000)
 print("Line\tGuess\tCorrect\tGuess%\tCorrect%\tError")
 acc_err = 0
 fails = 0
-for line, correct in test_data:
+for i, [line, correct] in enumerate(test_data):
     guess = model.run(input_layer(line))
     error = abs(correct - clamp(float(guess), 0.0, 1.0))
     acc_err += error
 
     if error >= 0.5:
-        print("\x1b[91m", end="")
         fails += 1
+
+    if i >= 30:
+        continue
+
+    if error >= 0.5:
+        print("\x1b[91m", end="")
     else:
         print("\x1b[92m", end="")
 
@@ -101,8 +106,8 @@ mean_err = acc_err / len(test_data)
 fail_rate = fails / len(test_data)
 print(f"total:\t{len(test_data)}")
 print(f"fails:\t{fails}")
-print(f"fail rate: {fail_rate:.2f}")
-print(f"mean error: {mean_err:.2f}")
+print(f"fail rate: {fail_rate:.5f}")
+print(f"mean error: {mean_err:.5f}")
 
 plotter.show_loss_curve()
 
