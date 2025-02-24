@@ -9,23 +9,65 @@ Arr = np.typing.NDArray[np.float64]
 def sigmoid(x: Arr) -> Arr:
     return 1 / (1 + np.exp(-x))
 
+def sigmoid_deriv(x: Arr) -> Arr:
+    return x * (1 - x)
+
 class Model:
     def __init__(self, layer_sizes: list[int], biases: list[Arr], weights: list[Arr]) -> None:
         self.layer_sizes = layer_sizes
         self.biases = biases
         self.weights = weights
 
-    def run(self, inputs: Arr) -> Arr:
+        self.learning_rate = 0.1
+        self.values_means: list[Arr] = [np.zeros(shape=(size,)) for size in self.layer_sizes[1:]]
+        self.runs = 0
+
+    def guess(self, inputs: Arr) -> Arr:
         outputs = inputs
 
         for layer_idx in range(len(self.layer_sizes) - 1):
-            products = outputs * self.weights[layer_idx].transpose()
-            values = products + self.biases[layer_idx]
-            sums = values.sum(axis=1)
-            normalized = sigmoid(sums)
-            outputs = normalized
+            l0 = outputs
+            l1 = l0 * self.weights[layer_idx].T
+            l2 = l1.T + self.biases[layer_idx]
+            l3 = l2.T.sum(axis=1)
+            l4 = sigmoid(l3)
 
+            self.values_means[layer_idx] += l4 / (self.runs + 1)
+            outputs = l4
+
+        self.runs += 1
         return outputs
+
+    def train(self, data: list[tuple[Arr, Arr]]) -> float:
+        for arr in self.values_means:
+            arr *= 0
+        self.runs = 0
+
+        error_acc = np.zeros(shape=(1,), dtype=np.float64)
+        square_error_acc = np.zeros(shape=(1,), dtype=np.float64)
+
+        for input, correct in data:
+            guess = self.guess(input) # -> self.layer_values
+            error = correct - guess
+            error_acc += error
+            square_error_acc += np.square(error)
+
+        mean_error = error_acc / len(data)
+        mean_square_error = square_error_acc / len(data)
+
+        self.backpropagate(mean_square_error)
+        return mean_square_error.item()
+        
+    def backpropagate(self, loss: Arr) -> None:
+        self.backpropagate_layer(loss, len(self.layer_sizes) - 2)
+
+    def backpropagate_layer(self, loss: Arr, layer_idx: int) -> None:
+        delta = loss * sigmoid_deriv(self.values_means[layer_idx])
+        if layer_idx > 0:
+            next_error = np.dot(delta, self.weights[layer_idx].T)
+            self.backpropagate_layer(next_error, layer_idx - 1)
+        self.weights[layer_idx] += np.dot(self.values_means[layer_idx].T, delta) * self.learning_rate
+        self.biases[layer_idx] += np.sum(delta, axis=0, keepdims=True) * self.learning_rate
 
     def mutate(self) -> None:
         weight_mag = 1.0
@@ -59,14 +101,15 @@ class ModelBuilder:
         layers = [self.inputs, *self.layers, self.outputs]
 
         biases: list[Arr] = []
-        for layer in layers:
-            layer_biases = np.random.random(size=(layer))
-            # layer_biases = np.zeros(shape=(layer))
+        for i in range(len(layers) - 1):
+            layer_biases = np.random.random(size=(layers[i + 1]))
+            # layer_biases = np.zeros(shape=(layers[i + 1]))
             biases.append(layer_biases)
 
         weights: list[Arr] = []
         for i in range(len(layers) - 1):
             layer_weights = np.random.random(size=(layers[i], layers[i + 1]))
+            # layer_weights = np.zeros(shape=(layers[i], layers[i + 1]))
             weights.append(layer_weights)
 
         return Model(layers, biases, weights)

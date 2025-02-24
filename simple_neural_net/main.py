@@ -20,7 +20,7 @@ LINE_LEN = 6
 def rand_line() -> str:
     line = []
     for _ in range(LINE_LEN):
-        line.append("x" if ra.randint(0, 3) == 3 else "-")
+        line.append("x" if ra.randint(0, 2) == 2 else "-")
     return "".join(line)
 
 def has_dups(line: str) -> bool:
@@ -40,8 +40,8 @@ def train_best_of_2(origo: Model, test_data: Data, plotter: ModelPlotter) -> Mod
     ai_1_acc_err = 0
     ai_2_acc_err = 0
     for line, correct in test_data:
-        ai_1_result = model1.run(input_layer(line))[0]
-        ai_2_result = model2.run(input_layer(line))[0]
+        ai_1_result = model1.guess(input_layer(line))[0]
+        ai_2_result = model2.guess(input_layer(line))[0]
 
         ai_1_acc_err += pow(correct - ai_1_result, 2)
         ai_2_acc_err += pow(correct - ai_2_result, 2)
@@ -72,20 +72,32 @@ training_data = make_data(100)
 
 builder = ModelBuilder(LINE_LEN, 1)
 builder.add_layer(12)
-builder.add_layer(12)
-builder.add_layer(12)
 model = builder.build()
 
 plotter = ModelPlotter()
 
-training_iterations = 10000
+training_iterations = 100
 
-bar = Progbar(100)
+# bar = Progbar(100, hidden=False)
+# bar.print_initial()
+# for i in range(100):
+#     bar.print_iter(i / 100);
+#     for _ in range(math.floor(training_iterations / 100)):
+#         model = train_best_of_2(model, training_data, plotter)
+#
+# bar.print_finished();
+
+bar = Progbar(100, hidden=False)
 bar.print_initial()
 for i in range(100):
     bar.print_iter(i / 100);
-    for _ in range(math.floor(training_iterations / 100)):
-        model = train_best_of_2(model, training_data, plotter)
+    for _ in range(math.ceil(training_iterations / 100)):
+        data = [
+            (input_layer(line), np.array([correct], dtype=np.float64))
+                for line, correct in training_data
+        ]
+        mse = model.train(data)
+        plotter.log_loss(mse)
 
 bar.print_finished();
 
@@ -95,7 +107,7 @@ print("Line\tGuess\tCorrect\tGuess%\tCorrect%\tError")
 acc_err = 0
 fails = 0
 for i, [line, correct] in enumerate(test_data):
-    guess = model.run(input_layer(line))[0]
+    guess = model.guess(input_layer(line))[0]
     error = abs(correct - clamp(float(guess), 0.0, 1.0))
     acc_err += error
 
