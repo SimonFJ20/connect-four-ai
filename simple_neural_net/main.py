@@ -73,6 +73,7 @@ training_data = make_data(100)
 builder = ModelBuilder(LINE_LEN, 1)
 builder.add_layer(12)
 builder.add_layer(12)
+builder.add_layer(12)
 model = builder.build()
 
 plotter = ModelPlotter()
