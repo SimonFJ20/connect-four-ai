@@ -1,3 +1,5 @@
 a.out
 *.gch
 
+test_loss.dat
+train_loss.dat

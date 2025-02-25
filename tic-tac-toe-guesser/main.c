@@ -96,13 +96,22 @@ int main(void)
         = malloc(sizeof(TestDataEntry) * training_data_size);
     test_data_generate(training_data, training_data_size);
 
+    size_t test_data_size = 100;
+    TestDataEntry* test_data = malloc(sizeof(TestDataEntry) * test_data_size);
+    test_data_generate(test_data, test_data_size);
+
     Model* model = malloc(sizeof(Model));
     Model* clone = malloc(sizeof(Model));
     model_contruct(model, layers, sizeof(layers) / sizeof(layers[0]));
 
-    size_t iterations = 100000;
+    size_t iterations = 10000;
+    size_t tests = 200;
+    size_t iters_per_test = iterations / tests;
 
-    printf("loss mse\ni\tmodel\tclone\n");
+    FILE* train_loss_file = fopen("train_loss.dat", "w");
+    FILE* test_loss_file = fopen("test_loss.dat", "w");
+
+    printf("i\ttrain\ttest\n");
     for (size_t iter = 0; iter < iterations; ++iter) {
         model_clone(clone, model);
         model_mutate(clone);
@@ -136,14 +145,29 @@ int main(void)
             model_destroy(clone);
         }
 
-        if (iter % 100 == 0) {
-            printf("%ld\t%.4f\t%.4f\n", iter + 1, model_mse, clone_mse);
+        if (iter % iters_per_test == 0) {
+
+            double acc_err = 0;
+            for (size_t i = 0; i < test_data_size; ++i) {
+                Mx1* outputs = model_feed(model, test_data[i].input);
+                mx1_sub(outputs, test_data[i].correct);
+                acc_err += pow(mx1_sum(outputs), 2.0);
+                mx1_free(outputs);
+            }
+            double mse = acc_err / (double)test_data_size;
+            printf("%ld\t%.4f\t%.4f\n", iter + 1, model_mse, mse);
+            fprintf(train_loss_file, "%ld %f\n", iter, model_mse);
+            fprintf(test_loss_file, "%ld %f\n", iter, mse);
         }
     }
 
     free(clone);
 
+    fclose(train_loss_file);
+    fclose(test_loss_file);
+
     test_data_free(training_data, training_data_size);
+    test_data_free(test_data, test_data_size);
 
     model_destroy(model);
     free(model);
