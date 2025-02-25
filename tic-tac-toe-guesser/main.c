@@ -1,5 +1,6 @@
 #include "matrix.h"
 #include "model.h"
+#include "util.h"
 #include <math.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -7,6 +8,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+
+static inline double assign_randd_dec(double v)
+{
+    (void)v;
+    return randd_dec();
+}
 
 #define O 0.0
 #define _ 0.5
@@ -31,6 +38,13 @@ int main(void)
     Mx1* inputs = mx1_from(test_inputs, 9);
     size_t test_input_size = 1;
 
+    mx1_print(inputs);
+
+    Mx2* bingbong = mx2_new(3, 5);
+    mx2_apply(bingbong, assign_randd_dec);
+    mx2_print(bingbong);
+    mx2_free(bingbong);
+
     const double test_outputs[] = { 0.0, 1.0 };
     Mx1* correct_outputs = mx1_from(test_outputs, 2);
 
@@ -40,6 +54,7 @@ int main(void)
 
     printf("loss mse\ni\tmodel\tclone\n");
     for (size_t iter = 0; iter < iterations; ++iter) {
+        break;
         model_clone(clone, model);
         model_mutate(clone);
 

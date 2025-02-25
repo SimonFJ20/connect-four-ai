@@ -52,4 +52,7 @@ void mx1_double_multiply(Mx1* lhs, double rhs);
 void mx2_double_add(Mx2* lhs, double rhs);
 void mx2_double_multiply(Mx2* lhs, double rhs);
 
+void mx1_print(const Mx1* m);
+void mx2_print(const Mx2* m);
+
 #endif

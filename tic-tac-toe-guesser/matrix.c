@@ -266,3 +266,33 @@ void mx2_double_multiply(Mx2* lhs, double rhs)
         }
     }
 }
+
+void mx1_print(const Mx1* m)
+{
+    printf("\u250c        \u2510\n");
+    for (size_t col = 0; col < m->cols; ++col) {
+        printf("\u2502 % 5.2f  \u2502\n", *mx1_at_const(m, col));
+    }
+    printf("\u2514        \u2518\n");
+}
+
+void mx2_print(const Mx2* m)
+{
+    fputs("\u250c ", stdout);
+    for (size_t row = 0; row < m->rows; ++row) {
+        fputs("      ", stdout);
+    }
+    fputs("\u2510\n", stdout);
+    for (size_t col = 0; col < m->cols; ++col) {
+        fputs("\u2502 ", stdout);
+        for (size_t row = 0; row < m->rows; ++row) {
+            printf("% 5.2f ", *mx2_at_const(m, row, col));
+        }
+        fputs("\u2502\n", stdout);
+    }
+    fputs("\u2514 ", stdout);
+    for (size_t row = 0; row < m->rows; ++row) {
+        fputs("      ", stdout);
+    }
+    fputs("\u2518\n", stdout);
+}
