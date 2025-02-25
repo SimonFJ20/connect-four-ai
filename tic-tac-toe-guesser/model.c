@@ -1,14 +1,15 @@
 #include "model.h"
 #include "matrix.h"
 #include "util.h"
+#include <math.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-static inline double assign_randd_dec(double v)
+static inline double randd_dec_f(double in)
 {
-    (void)v;
+    (void)in;
     return randd_dec();
 }
 
@@ -25,9 +26,9 @@ int model_contruct(Model* model, size_t* layers, size_t layers_size)
 
     for (size_t i = 0; i < layers_size - 1; i++) {
         weights[i] = mx2_new(layers[i], layers[i + 1]);
-        mx2_apply(weights[i], assign_randd_dec);
+        mx2_apply(weights[i], randd_dec_f);
         biases[i] = mx1_new(layers[i + 1]);
-        mx1_apply(biases[i], assign_randd_dec);
+        mx1_apply(biases[i], randd_dec_f);
     }
 
     *model = (Model) {
@@ -101,26 +102,41 @@ Mx1* model_feed(Model* model, const Mx1* inputs)
     return outputs;
 }
 
+static inline double mutation_dec(double in)
+{
+    (void)in;
+    double r = randd_dec();
+    if (r > 0.5) {
+        double v = pow(r * 2.0, 2.0) / 4.0;
+        return v > 0.5 ? v : 0.0;
+    } else {
+        double v = pow((1.0 - r) * 2.0, 2.0) / 4.0;
+        return v > 0.5 ? -v : 0.0;
+    }
+}
+
 void model_mutate(Model* model)
 {
-    double weight_magnitude = 1.0;
+    double learning_rate = 0.5;
+
     for (size_t i = 0; i < model->weights_size; ++i) {
         Mx2* layer_weights = model->weights[i];
         Mx2* mutation = mx2_new(layer_weights->rows, layer_weights->cols);
-        mx2_apply(mutation, assign_randd_dec);
-        mx2_double_multiply(mutation, weight_magnitude);
-        mx2_double_multiply(mutation, weight_magnitude / 2);
+        mx2_apply(mutation, mutation_dec);
+        mx2_double_multiply(mutation, learning_rate);
+        mx2_double_multiply(mutation, learning_rate / 2);
+        // mx2_print(mutation);
         mx2_add(layer_weights, mutation);
         mx2_free(mutation);
     }
 
-    double bias_magnitude = 2.0;
     for (size_t i = 0; i < model->biases_size; ++i) {
         Mx1* layer_bias = model->biases[i];
         Mx1* mutation = mx1_new(layer_bias->cols);
-        mx1_apply(mutation, assign_randd_dec);
-        mx1_double_multiply(mutation, bias_magnitude);
-        mx1_double_multiply(mutation, bias_magnitude / 2);
+        mx1_apply(mutation, mutation_dec);
+        mx1_double_multiply(mutation, learning_rate);
+        mx1_double_multiply(mutation, learning_rate / 2);
+        // mx1_print(mutation);
         mx1_add(layer_bias, mutation);
         mx1_free(mutation);
     }

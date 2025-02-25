@@ -8,6 +8,7 @@ typedef struct {
     double values[];
 } Mx1;
 
+void mx1_construct(Mx1* matrix, size_t cols);
 Mx1* mx1_new(size_t cols);
 void mx1_free(Mx1* matrix);
 Mx1* mx1_from(const double* values, size_t cols);

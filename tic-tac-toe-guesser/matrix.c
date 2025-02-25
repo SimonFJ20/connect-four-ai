@@ -42,10 +42,15 @@
         }                                                                      \
     }
 
+void mx1_construct(Mx1* matrix, size_t cols)
+{
+    *matrix = (Mx1) { cols };
+}
+
 Mx1* mx1_new(size_t cols)
 {
     Mx1* matrix = malloc(sizeof(Mx1) + cols * sizeof(double));
-    *matrix = (Mx1) { cols };
+    mx1_construct(matrix, cols);
     return matrix;
 }
 
@@ -286,7 +291,11 @@ void mx2_print(const Mx2* m)
     for (size_t col = 0; col < m->cols; ++col) {
         fputs("\u2502 ", stdout);
         for (size_t row = 0; row < m->rows; ++row) {
-            printf("% 5.2f ", *mx2_at_const(m, row, col));
+            double v = *mx2_at_const(m, row, col);
+            if (v == 0) {
+                fputs("\x1b[90m", stdout);
+            }
+            printf("% 5.2f \x1b[0m", v);
         }
         fputs("\u2502\n", stdout);
     }
