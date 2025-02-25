@@ -17,14 +17,8 @@ typedef struct {
 
 int model_contruct(Model* model, size_t* layers, size_t layers_size);
 void model_destroy(Model* model);
+int model_clone(Model* clone, const Model* model);
 Mx1* model_feed(Model* model, const Mx1* inputs);
-
-double rand_val(void);
-
-double relu(double x);
-double relu_deriv(double x);
-
-double sigmoid(double x);
-double sigmoid_deriv(double x);
+void model_mutate(Model* model);
 
 #endif

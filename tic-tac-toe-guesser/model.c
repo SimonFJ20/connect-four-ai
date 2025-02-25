@@ -1,14 +1,14 @@
 #include "model.h"
 #include "matrix.h"
-#include <math.h>
+#include "util.h"
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 
-static inline double assign_rand_val(double v)
+static inline double assign_randd_dec(double v)
 {
     (void)v;
-    return rand_val();
+    return randd_dec();
 }
 
 int model_contruct(Model* model, size_t* layers, size_t layers_size)
@@ -24,9 +24,9 @@ int model_contruct(Model* model, size_t* layers, size_t layers_size)
 
     for (size_t i = 0; i < layers_size - 1; i++) {
         weights[i] = mx2_new(layers[i], layers[i + 1]);
-        mx2_apply(weights[i], assign_rand_val);
+        mx2_apply(weights[i], assign_randd_dec);
         biases[i] = mx1_new(layers[i + 1]);
-        mx1_apply(biases[i], assign_rand_val);
+        mx1_apply(biases[i], assign_randd_dec);
     }
 
     *model = (Model) {
@@ -51,6 +51,34 @@ void model_destroy(Model* model)
     free(model->biases);
 }
 
+int model_clone(Model* clone, const Model* m)
+{
+
+    size_t* layers_clone = malloc(m->layers_size * sizeof(size_t));
+    memcpy(layers_clone, m->layers, m->layers_size * sizeof(size_t));
+
+    Mx2** weights = malloc(m->weights_size * sizeof(Mx2*));
+    Mx1** biases = malloc(m->biases_size * sizeof(Mx1*));
+
+    for (size_t i = 0; i < m->weights_size; i++) {
+        weights[i] = mx2_clone(m->weights[i]);
+    }
+
+    for (size_t i = 0; i < m->biases_size; i++) {
+        biases[i] = mx1_clone(m->biases[i]);
+    }
+
+    *clone = (Model) {
+        layers_clone,
+        m->layers_size,
+        weights,
+        m->weights_size,
+        biases,
+        m->biases_size,
+    };
+    return 0;
+}
+
 Mx1* model_feed(Model* model, const Mx1* inputs)
 {
     Mx1* outputs = mx1_clone(inputs);
@@ -72,26 +100,27 @@ Mx1* model_feed(Model* model, const Mx1* inputs)
     return outputs;
 }
 
-double rand_val(void)
+void model_mutate(Model* model)
 {
-    return (double)rand() / RAND_MAX;
-}
+    double weight_magnitude = 1.0;
+    for (size_t i = 0; i < model->weights_size; ++i) {
+        Mx2* layer_weights = model->weights[i];
+        Mx2* mutation = mx2_new(layer_weights->rows, layer_weights->cols);
+        mx2_apply(mutation, assign_randd_dec);
+        mx2_double_multiply(mutation, weight_magnitude);
+        mx2_double_multiply(mutation, weight_magnitude / 2);
+        mx2_add(layer_weights, mutation);
+        mx2_free(mutation);
+    }
 
-double relu(double x)
-{
-    return x > 0 ? x : 0;
-}
-
-double relu_deriv(double x)
-{
-    return x > 0 ? 1 : 0;
-}
-
-double sigmoid(double x)
-{
-    return 0.5 * (x / (1 + fabs(x)) + 1);
-}
-double sigmoid_deriv(double x)
-{
-    return x * (1 - x);
+    double bias_magnitude = 2.0;
+    for (size_t i = 0; i < model->biases_size; ++i) {
+        Mx1* layer_bias = model->biases[i];
+        Mx1* mutation = mx1_new(layer_bias->cols);
+        mx1_apply(mutation, assign_randd_dec);
+        mx1_double_multiply(mutation, bias_magnitude);
+        mx1_double_multiply(mutation, bias_magnitude / 2);
+        mx1_add(layer_bias, mutation);
+        mx1_free(mutation);
+    }
 }

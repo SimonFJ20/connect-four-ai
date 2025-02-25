@@ -38,4 +38,18 @@ typedef double (*ApplyFunc)(double value);
 void mx1_apply(Mx1* matrix, ApplyFunc func);
 void mx2_apply(Mx2* matrix, ApplyFunc func);
 
+void mx1_add(Mx1* lhs, const Mx1* rhs);
+void mx1_sub(Mx1* lhs, const Mx1* rhs);
+void mx1_multiply(Mx1* lhs, const Mx1* rhs);
+double mx1_sum(const Mx1* matrix);
+
+void mx2_add(Mx2* lhs, const Mx2* rhs);
+void mx2_multiply(Mx2* lhs, const Mx2* rhs);
+
+void mx1_double_add(Mx1* lhs, double rhs);
+void mx1_double_multiply(Mx1* lhs, double rhs);
+
+void mx2_double_add(Mx2* lhs, double rhs);
+void mx2_double_multiply(Mx2* lhs, double rhs);
+
 #endif
