@@ -1,4 +1,6 @@
 
-all:
-	gcc *.c -Wall -Wextra -pedantic -pedantic-errors -Wconversion
+CFLAGS = -Wall -Wextra -pedantic -pedantic-errors -Wconversion -fsanitize=address,undefined -g -Og
+LIBERALS = -lm
 
+all:
+	gcc *.c $(CFLAGS) $(LIBERALS)

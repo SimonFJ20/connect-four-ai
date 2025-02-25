@@ -1,68 +1,33 @@
 #include "matrix.h"
+#include "model.h"
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-typedef struct {
-    size_t* layers;
-    size_t layers_size;
-
-    Mx2** weights;
-    size_t weights_size;
-
-    Mx1** biases;
-    size_t biases_size;
-} Model;
-
-int model_contruct(Model* model, size_t* layers, size_t layers_size)
-{
-    size_t weights_size = layers_size - 1;
-    Mx2** weights = malloc(weights_size);
-
-    size_t biases_size = layers_size - 1;
-    Mx1** biases = malloc(biases_size);
-
-    for (size_t i = 0; i < layers_size - 1; i++) {
-        weights[i] = mx2_new(layers[i], layers[i + 1]);
-        biases[i] = mx1_new(layers[i + 1]);
-    }
-
-    *model = (Model) {
-        layers,
-        layers_size,
-        weights,
-        weights_size,
-        biases,
-        biases_size,
-    };
-    return 0;
-}
-
-void model_destroy(Model* model)
-{
-    free(model->layers);
-    free(model->weights);
-    free(model->biases);
-}
-
-Mx1* model_feed(Model* model, Mx1* inputs)
-{
-    Mx1* outputs = inputs;
-
-    size_t layers_idcs = model->layers_size - 1;
-    for (size_t layer_idx = 0; layer_idx < layers_idcs; ++layer_idx) {
-        //
-    }
-    return outputs;
-}
+#include <time.h>
 
 int main(void)
 {
+    srand((uint32_t)time(NULL));
+
     size_t layers[] = { 9, 9, 2 };
 
     Model model;
     model_contruct(&model, layers, sizeof(layers) / sizeof(layers[0]));
 
+    const double le_inputs[] = {
+        // clang-format off
+        1.0, 0.0, 0.0,
+        0.0, 1.0, 0.0,
+        0.0, 0.0, 1.0,
+        // clang-format on
+    };
+    Mx1* inputs = mx1_from(le_inputs, 9);
+
+    Mx1* outputs = model_feed(&model, inputs);
+
+    mx1_free(inputs);
+    mx1_free(outputs);
     model_destroy(&model);
 }
