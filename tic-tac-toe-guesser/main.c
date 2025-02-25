@@ -104,8 +104,8 @@ int main(void)
     Model* clone = malloc(sizeof(Model));
     model_contruct(model, layers, sizeof(layers) / sizeof(layers[0]));
 
-    size_t iterations = 10000;
-    size_t tests = 200;
+    size_t iterations = 20000;
+    size_t tests = 100;
     size_t iters_per_test = iterations / tests;
 
     FILE* train_loss_file = fopen("train_loss.dat", "w");
