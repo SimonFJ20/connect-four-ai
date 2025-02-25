@@ -1,6 +1,7 @@
 #include "matrix.h"
 #include "model.h"
 #include "util.h"
+#include "plotter.h"
 #include <math.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -104,12 +105,17 @@ int main(void)
     Model* clone = malloc(sizeof(Model));
     model_contruct(model, layers, sizeof(layers) / sizeof(layers[0]));
 
-    size_t iterations = 20000;
+    size_t iterations = 1000;
     size_t tests = 100;
     size_t iters_per_test = iterations / tests;
 
-    FILE* train_loss_file = fopen("train_loss.dat", "w");
-    FILE* test_loss_file = fopen("test_loss.dat", "w");
+	char* labels[] = { "Testing data", "Training data" };
+	char* files[] = { "test_loss.dat", "train_loss.dat" };
+	Plotter plotter = plotter_create(
+		"Loss over time",
+		"Iterations", "Loss",
+		2, labels, files
+	);
 
     printf("i\ttrain\ttest\n");
     for (size_t iter = 0; iter < iterations; ++iter) {
@@ -156,15 +162,15 @@ int main(void)
             }
             double mse = acc_err / (double)test_data_size;
             printf("%ld\t%.4f\t%.4f\n", iter + 1, model_mse, mse);
-            fprintf(train_loss_file, "%ld %f\n", iter, model_mse);
-            fprintf(test_loss_file, "%ld %f\n", iter, mse);
+			plotter_add_entry(plotter, 0, iter + 1, model_mse);
+			plotter_add_entry(plotter, 1, iter + 1, mse);
         }
     }
 
-    free(clone);
+	plotter_show(plotter);
+	plotter_destroy(plotter);
 
-    fclose(train_loss_file);
-    fclose(test_loss_file);
+    free(clone);
 
     test_data_free(training_data, training_data_size);
     test_data_free(test_data, test_data_size);
