@@ -105,17 +105,17 @@ int main(void)
     Model* clone = malloc(sizeof(Model));
     model_contruct(model, layers, sizeof(layers) / sizeof(layers[0]));
 
-    size_t iterations = 1000;
+    size_t iterations = 10000;
     size_t tests = 100;
     size_t iters_per_test = iterations / tests;
 
-	char* labels[] = { "Testing data", "Training data" };
-	char* files[] = { "test_loss.dat", "train_loss.dat" };
-	Plotter plotter = plotter_create(
-		"Loss over time",
-		"Iterations", "Loss",
-		2, labels, files
-	);
+    char* labels[] = { "Testing data", "Training data" };
+    char* files[] = { "test_loss.dat", "train_loss.dat" };
+    Plotter plotter = plotter_create(
+        "Loss over time",
+        "Iterations", "Loss",
+        2, labels, files
+    );
 
     printf("i\ttrain\ttest\n");
     for (size_t iter = 0; iter < iterations; ++iter) {
@@ -162,13 +162,15 @@ int main(void)
             }
             double mse = acc_err / (double)test_data_size;
             printf("%ld\t%.4f\t%.4f\n", iter + 1, model_mse, mse);
-			plotter_add_entry(plotter, 0, iter + 1, model_mse);
-			plotter_add_entry(plotter, 1, iter + 1, mse);
+            if (iter > 4) {
+                plotter_add_entry(plotter, 0, iter + 1, model_mse);
+                plotter_add_entry(plotter, 1, iter + 1, mse);
+            }
         }
     }
 
-	plotter_show(plotter);
-	plotter_destroy(plotter);
+    plotter_show(plotter);
+    plotter_destroy(plotter);
 
     free(clone);
 
