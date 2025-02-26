@@ -4,6 +4,7 @@
 #include <format>
 #include <iostream>
 #include <numeric>
+#include <random>
 #include <utility>
 #include <vector>
 
@@ -81,6 +82,16 @@ public:
     {
         for (auto& v : m_data)
             v *= rhs;
+    }
+
+    auto dot(const Mx1& rhs) const -> double
+    {
+        ASSERT_EQ(m_cols, rhs.cols());
+        double res = 0;
+        for (size_t col = 0; col < m_cols; ++col) {
+            res += m_data[col] * rhs[col];
+        }
+        return res;
     }
 
     auto sum() const -> double
@@ -191,6 +202,19 @@ public:
             v *= rhs;
     }
 
+    auto dot(const Mx1& rhs) const -> Mx1
+    {
+        ASSERT_EQ(m_cols, rhs.cols());
+        auto res = Mx1(m_rows);
+        for (size_t row = 0; row < m_rows; ++row) {
+            res[row] = 0;
+            for (size_t col = 0; col < m_cols; ++col) {
+                res[row] += at(row, col) * rhs[col];
+            }
+        }
+        return res;
+    }
+
     auto sum() const -> Mx1
     {
         auto sum = Mx1(m_cols);
@@ -229,6 +253,13 @@ private:
     std::vector<double> m_data;
 };
 
+double randd(double min, double max);
+double randd_dec(void);
+double relu(double x);
+double relu_deriv(double x);
+double sigmoid(double x);
+double sigmoid_deriv(double x);
+
 class Model {
 public:
     Model(std::vector<size_t> layers);
@@ -236,18 +267,30 @@ public:
     auto feed(const Mx1& input) -> Mx1;
     void mutate();
 
+    struct DataEntry {
+        Mx1 input;
+        Mx1 correct;
+    };
+    using Data = std::vector<DataEntry>;
+    struct TrainOpts {
+        size_t epochs;
+        size_t batch_size;
+        double learn_rate;
+    };
+
+    /// mini-batch stochastic gradient descent
+    void train_sgd(Data train_data, const Data& test_data, TrainOpts opts);
+
 private:
+    auto backprop(const Mx1& input, const Mx1& correct)
+        -> std::tuple<std::vector<Mx2>, std::vector<Mx1>>;
+    auto zeroed_weights_biases()
+        -> std::tuple<std::vector<Mx2>, std::vector<Mx1>>;
+
     std::vector<size_t> m_layers;
     std::vector<Mx2> m_weights;
     std::vector<Mx1> m_biases;
 };
-
-double randd(double min, double max);
-double randd_dec(void);
-double relu(double x);
-double relu_deriv(double x);
-double sigmoid(double x);
-double sigmoid_deriv(double x);
 
 }
 

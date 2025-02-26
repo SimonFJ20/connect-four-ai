@@ -2,7 +2,6 @@
 #include "console.hpp"
 #include "deci_tree_ai.hpp"
 #include "nn_model.hpp"
-#include "printer.hpp"
 #include <cstdint>
 #include <cstdlib>
 #include <ctime>
@@ -38,7 +37,7 @@ public:
 
     void run()
     {
-        run_ais_against_each_other();
+        // run_ais_against_each_other();
         // run_nnmodel_against_user();
         // run_nn_models_against_each_other();
     }
@@ -175,7 +174,7 @@ private:
 
     void run_nn_models_against_each_other()
     {
-        constexpr auto training_iters = 1000'000;
+        constexpr auto training_iters = 100'000;
 
         auto l = std::locale("en_DK.UTF-8");
         std::cout << std::format(
@@ -248,7 +247,10 @@ private:
                     break;
                 }
             }
-            std::println("{:3.1f}%", (double)(i + 1) / training_iters * 100);
+            if (i % (training_iters / 400) == 0) {
+                std::println(
+                    "{:3.1f}%", (double)(i + 1) / training_iters * 100);
+            }
         }
 
         std::println("done");
