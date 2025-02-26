@@ -1,6 +1,7 @@
 #ifndef BOARD_HPP
 #define BOARD_HPP
 
+#include "nn_model.hpp"
 #include "printer.hpp"
 #include "tile.hpp"
 #include <cstddef>
@@ -76,6 +77,8 @@ public:
     using Hash = size_t;
     auto hash() const -> Hash;
     auto flipped_hash() const -> size_t;
+
+    auto as_mx1() const -> Mx1;
 
 private:
     auto col_hash(Col col) const -> size_t;

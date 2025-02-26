@@ -153,3 +153,18 @@ auto Board::col_hash(Col col) const -> size_t
     hash |= col_height << 6;
     return hash;
 }
+
+auto Board::as_mx1() const -> Mx1
+{
+    auto v = [](Tile tile) {
+        return tile == Tile::Empty ? 0.5 : tile == Tile::Blue ? 0.0 : 1.0;
+    };
+
+    auto m = Mx1(width * height);
+    for (size_t row = 0; row < width; ++row) {
+        for (size_t col = 0; col < height; ++col) {
+            m[row * height + col] = v(tile({ row, col }));
+        }
+    }
+    return m;
+}

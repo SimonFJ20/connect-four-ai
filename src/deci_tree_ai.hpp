@@ -60,6 +60,11 @@ public:
         return model_entries() * estimated_entry_size;
     }
 
+    auto set_exploration(Weight exploration)
+    {
+        m_exploration = exploration;
+    }
+
 private:
     auto lookup_choices(Board board)
         -> std::tuple<Board::Hash, const ColWeights*>;
@@ -72,6 +77,8 @@ private:
     std::vector<Choice> m_current_choices {};
 
     Color m_color;
+
+    Weight m_exploration = 3;
 };
 
 }

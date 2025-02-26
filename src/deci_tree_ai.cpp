@@ -59,7 +59,7 @@ auto DeciTreeAi::lookup_choices(Board board)
 auto DeciTreeAi::choice_is_candidate(Weight weight, Weight cand_weight) const
     -> bool
 {
-    return weight + 2 >= cand_weight;
+    return weight + m_exploration >= cand_weight;
 }
 
 void DeciTreeAi::new_game()

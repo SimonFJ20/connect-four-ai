@@ -8,7 +8,6 @@
 #include <ctime>
 #include <format>
 #include <iostream>
-#include <ostream>
 #include <print>
 #include <utility>
 #include <vector>
@@ -22,21 +21,26 @@ enum class ControlFlow {
 
 class Program {
 private:
-    ConsolePrinter printer;
+    ConsolePrinter m_printer;
 
     DeciTreeAi ai1;
     DeciTreeAi ai2;
+
+    Model m_model;
 
 public:
     Program()
         : ai1(Tile::Red)
         , ai2(Tile::Blue)
+        , m_model({ 42, 42, 18, 6 })
     {
     }
 
     void run()
     {
-        run_ais_against_each_other(printer);
+        run_ais_against_each_other();
+        // run_nnmodel_against_user();
+        // run_nn_models_against_each_other();
     }
 
 private:
@@ -59,15 +63,15 @@ private:
     {
         switch (board.game_state()) {
             case GameState::RedWon:
-                board.print(printer);
+                board.print(m_printer);
                 std::println("\x1b[1;91mRed won!\x1b[0m");
                 return ControlFlow::Break;
             case GameState::BlueWon:
-                board.print(printer);
+                board.print(m_printer);
                 std::println("\x1b[1;94mBlue won!\x1b[0m");
                 return ControlFlow::Break;
             case GameState::Draw:
-                board.print(printer);
+                board.print(m_printer);
                 std::println("\x1b[1;95mDraw!\x1b[0m");
                 return ControlFlow::Break;
             case GameState::Ongoing:
@@ -93,14 +97,14 @@ private:
         }
     }
 
-    void run_pvp(Printer& printer)
+    void run_pvp()
     {
 
         auto board = Board();
 
         while (true) {
             std::println("\x1b[1;91mRed\x1b[0m's turn");
-            board.print(printer);
+            board.print(m_printer);
             size_t col;
             col = get_move_from_user(board);
             board.insert(col, Tile::Red);
@@ -109,7 +113,7 @@ private:
                 break;
 
             std::println("\x1b[1;94mBlue\x1b[0m's turn");
-            board.print(printer);
+            board.print(m_printer);
             col = get_move_from_user(board);
             board.insert(col, Tile::Blue);
 
@@ -118,9 +122,191 @@ private:
         }
     }
 
-    void run_ais_against_each_other(Printer& printer)
+    void run_nnmodel_against_user()
     {
-        constexpr auto training_iters = 1'000'000;
+        while (true) {
+            auto board = Board();
+
+            ai1.new_game();
+
+            while (true) {
+                std::println();
+                std::println("AI's turn");
+                board.print(m_printer);
+
+                size_t model_col = model_select_col(board, m_model);
+                board.insert(model_col, Tile::Red);
+                // model.mutate();
+
+                if (check_game_state_and_print(board) == ControlFlow::Break)
+                    break;
+
+                std::println();
+                std::println("Your turn");
+                board.print(m_printer);
+
+                auto col = get_move_from_user(board);
+                board.insert(col, Tile::Blue);
+
+                if (check_game_state_and_print(board) == ControlFlow::Break)
+                    break;
+            }
+        }
+    }
+
+    size_t model_select_col(Board& board, Model& model)
+    {
+
+        auto inputs = board.as_mx1();
+        auto outputs = model.feed(inputs);
+
+        auto possible_moves = board.possible_moves();
+
+        size_t selected_col = 0;
+        double max = 0;
+        for (size_t col = 0; col < 7; ++col) {
+            if (outputs[col] > max && possible_moves.at(col)) {
+                max = outputs[col];
+                selected_col = col;
+            }
+        }
+        return selected_col;
+    }
+
+    void run_nn_models_against_each_other()
+    {
+        constexpr auto training_iters = 1000'000;
+
+        auto l = std::locale("en_DK.UTF-8");
+        std::cout << std::format(
+            l, "Training AIs for {:L} iterations...\n", training_iters);
+
+        auto clone = m_model;
+        clone.mutate();
+
+        for (int i = 0; i < training_iters; ++i) {
+            auto board = Board();
+
+            while (true) {
+                size_t col = model_select_col(board, m_model);
+                board.insert(col, Tile::Red);
+                // board.print(m_printer);
+
+                auto should_break = false;
+                switch (board.game_state()) {
+                    case GameState::RedWon:
+                        clone = m_model;
+                        clone.mutate();
+                        should_break = true;
+                        // std::cout << "RED WON!!!\n";
+                        break;
+                    case GameState::BlueWon:
+                        m_model = clone;
+                        clone.mutate();
+                        should_break = true;
+                        // std::cout << "BLUE WON!!!\n";
+                        break;
+                    case GameState::Draw:
+                        clone.mutate();
+                        should_break = true;
+                        break;
+                    case GameState::Ongoing:
+                        break;
+                }
+                if (should_break) {
+                    // board.print(m_printer);
+                    break;
+                }
+
+                col = model_select_col(board, clone);
+                board.insert(col, Tile::Blue);
+                // board.print(m_printer);
+
+                should_break = false;
+                switch (board.game_state()) {
+                    case GameState::RedWon:
+                        m_model = clone;
+                        clone.mutate();
+                        should_break = true;
+                        // std::cout << "RED WON!!!\n";
+                        break;
+                    case GameState::BlueWon:
+                        clone = m_model;
+                        clone.mutate();
+                        should_break = true;
+                        // std::cout << "BLUE WON!!!\n";
+                        break;
+                    case GameState::Draw:
+                        clone.mutate();
+                        should_break = true;
+                        break;
+                    case GameState::Ongoing:
+                        break;
+                }
+                if (should_break) {
+                    // board.print(m_printer);
+                    break;
+                }
+            }
+            std::println("{:3.1f}%", (double)(i + 1) / training_iters * 100);
+        }
+
+        std::println("done");
+
+        for (;;) {
+            auto board = Board();
+
+            while (true) {
+                board.print(m_printer);
+                std::println("Red's turn");
+                fgetc(stdin);
+
+                size_t col = model_select_col(board, m_model);
+                board.insert(col, Tile::Red);
+
+                if (check_game_state_and_print_2(board) == ControlFlow::Break)
+                    break;
+
+                board.print(m_printer);
+                std::println("Blue's turn");
+                fgetc(stdin);
+
+                col = model_select_col(board, clone);
+                board.insert(col, Tile::Blue);
+
+                if (check_game_state_and_print_2(board) == ControlFlow::Break)
+                    break;
+            }
+            std::println("Game finished.");
+            board.print(m_printer);
+            std::println("\n");
+        }
+    }
+
+    ControlFlow check_game_state_and_print_2(Board& board)
+    {
+        switch (board.game_state()) {
+            case GameState::RedWon:
+                board.print(m_printer);
+                std::println("\x1b[1;91mRed won!\x1b[0m");
+                return ControlFlow::Break;
+            case GameState::BlueWon:
+                board.print(m_printer);
+                std::println("\x1b[1;94mBlue won!\x1b[0m");
+                return ControlFlow::Break;
+            case GameState::Draw:
+                board.print(m_printer);
+                std::println("\x1b[1;95mDraw!\x1b[0m");
+                return ControlFlow::Break;
+            case GameState::Ongoing:
+                return ControlFlow::Continue;
+        }
+        std::unreachable();
+    }
+
+    void run_ais_against_each_other()
+    {
+        constexpr auto training_iters = 10'000'000;
 
         auto l = std::locale("en_DK.UTF-8");
         std::cout << std::format(
@@ -155,39 +341,41 @@ private:
         std::cout << std::format(
             l, "2\t{:L}\t\t{:L}\n", ai2.model_entries(), ai2.model_size());
 
-        std::exit(0);
+        // std::exit(0);
 
-        for (;;) {
-            auto board = Board();
+        // for (;;) {
+        //     auto board = Board();
+        //
+        //     ai1.new_game();
+        //     ai2.new_game();
+        //
+        //     while (true) {
+        //         board.print(m_printer);
+        //         std::println("Red's turn");
+        //         fgetc(stdin);
+        //
+        //         size_t col = ai1.next_move(board);
+        //         board.insert(col, Tile::Red);
+        //
+        //         if (check_game_state_and_print(board) == ControlFlow::Break)
+        //             break;
+        //
+        //         board.print(m_printer);
+        //         std::println("Blue's turn");
+        //         fgetc(stdin);
+        //
+        //         col = ai2.next_move(board);
+        //         board.insert(col, Tile::Blue);
+        //
+        //         if (check_game_state_and_print(board) == ControlFlow::Break)
+        //             break;
+        //     }
+        //     std::println("Game finished.");
+        //     board.print(m_printer);
+        //     std::println("\n");
+        // }
 
-            ai1.new_game();
-            ai2.new_game();
-
-            while (true) {
-                board.print(printer);
-                std::println("Red's turn");
-                fgetc(stdin);
-
-                size_t col = ai1.next_move(board);
-                board.insert(col, Tile::Red);
-
-                if (check_game_state_and_print(board) == ControlFlow::Break)
-                    break;
-
-                board.print(printer);
-                std::println("Blue's turn");
-                fgetc(stdin);
-
-                col = ai2.next_move(board);
-                board.insert(col, Tile::Blue);
-
-                if (check_game_state_and_print(board) == ControlFlow::Break)
-                    break;
-            }
-            std::println("Game finished.");
-            board.print(printer);
-            std::println("\n");
-        }
+        ai1.set_exploration(0);
 
         while (true) {
             auto board = Board();
@@ -197,7 +385,7 @@ private:
             while (true) {
                 std::println();
                 std::println("AI's turn");
-                board.print(printer);
+                board.print(m_printer);
 
                 size_t col = ai1.next_move(board);
                 board.insert(col, Tile::Red);
@@ -207,7 +395,7 @@ private:
 
                 std::println();
                 std::println("Your turn");
-                board.print(printer);
+                board.print(m_printer);
 
                 col = get_move_from_user(board);
                 board.insert(col, Tile::Blue);
@@ -244,13 +432,6 @@ private:
 int main()
 {
     std::srand(static_cast<uint32_t>(std::time(nullptr)));
-    // auto program = Program();
-    // program.run();
-
-    auto model = Model({ 9, 9, 2 });
-    auto out = model.feed(Mx1({ 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0 }));
-    out.print();
-    model.mutate();
-    out = model.feed(Mx1({ 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0 }));
-    out.print();
+    auto program = Program();
+    program.run();
 }
