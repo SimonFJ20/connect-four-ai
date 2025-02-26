@@ -1,6 +1,7 @@
 #include "board.hpp"
 #include "console.hpp"
 #include "deci_tree_ai.hpp"
+#include "nn_model.hpp"
 #include "printer.hpp"
 #include <cstdint>
 #include <cstdlib>
@@ -10,6 +11,7 @@
 #include <ostream>
 #include <print>
 #include <utility>
+#include <vector>
 
 using namespace connect_four;
 
@@ -242,6 +244,13 @@ private:
 int main()
 {
     std::srand(static_cast<uint32_t>(std::time(nullptr)));
-    auto program = Program();
-    program.run();
+    // auto program = Program();
+    // program.run();
+
+    auto model = Model({ 9, 9, 2 });
+    auto out = model.feed(Mx1({ 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0 }));
+    out.print();
+    model.mutate();
+    out = model.feed(Mx1({ 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0 }));
+    out.print();
 }

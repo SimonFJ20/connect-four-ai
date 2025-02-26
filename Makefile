@@ -1,4 +1,6 @@
 
+MAKEFLAGS := --jobs=$(shell nproc)
+
 CPP_FLAGS = \
 	-std=c++23 \
 	-Wall \
@@ -18,7 +20,9 @@ ifeq ($(RELEASE),1)
 	FEATURE_FLAGS += -flto=auto
 	OPTIMIZATION = -O3
 else
+	CPP_FLAGS += -g
 	FEATURE_FLAGS += -fsanitize=address,undefined
+	OPTIMIZATION = -Og
 endif
 
 HEADERS = $(wildcard src/*.hpp)
@@ -27,6 +31,7 @@ CPP_FILES =     \
 	main.cpp    \
 	board.cpp   \
 	deci_tree_ai.cpp \
+	nn_model.cpp \
 	console.cpp \
 
 O_FILES = $(patsubst %.cpp,build/%.o,$(CPP_FILES))
