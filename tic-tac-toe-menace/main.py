@@ -33,7 +33,7 @@ PIECE_BIT_WIDTH = 2
 
 
 # the `raw_piece` methods avoids allocating a Piece as an object
-# usually you would allocate an object, because `def piece_at(self, pos: int) -> Piece` is more readable, than `def piece_at(self, pos: int) -> Piece`
+# usually you would allocate an object, because `def piece_at(self, pos: int) -> Piece` is more readable, than `def piece_at(self, pos: int) -> int`
 # however, we care about performance too much, and it's about a 3x slower using Piece in the code
 # because allocating an object is comparatively really, really slow, when done thousands of times in a hot loop
 # the `raw` name is just a naming convention i picked to represent that it's not actually an `int` we're passing about,
