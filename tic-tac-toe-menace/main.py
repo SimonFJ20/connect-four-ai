@@ -33,8 +33,11 @@ PIECE_BIT_WIDTH = 2
 
 
 # the `raw_piece` methods avoids allocating a Piece as an object
+# usually you would allocate an object, because `def piece_at(self, pos: int) -> Piece` is more readable, than `def piece_at(self, pos: int) -> Piece`
+# however, we care about performance too much, and it's about a 3x slower using Piece in the code
 # because allocating an object is comparatively really, really slow, when done thousands of times in a hot loop
-# so for performance-critical functions we prefer `raw` functions
+# the `raw` name is just a naming convention i picked to represent that it's not actually an `int` we're passing about,
+# semantically, it's a `Piece`, and has all the same constraints as a `Piece` does. (namely either being 0 for Empty, 1 for Cross, or 2 for Circle)
 class Board:
     def __init__(self, val=0) -> None:
         self.board = val
@@ -42,11 +45,15 @@ class Board:
     def raw_piece_at(self, pos: int) -> int:
         return (self.board >> pos * PIECE_BIT_WIDTH) & 0b11
 
-    def piece_at(self, pos: int) -> Piece:
-        return Piece(self.raw_piece_at(pos))
-
+    # manually inlined for performance
+    # python function calls are super expensive in a hot loop, and there isn't a way to inline functions in python
+    # so i've manually inlined it. this saves about ~0.5-1.0 seconds per 10_000 iterations
+    # usually i would not do this, but it's relatively easy pickings for performance
     def possible_plays(self) -> list[int]:
-        return [pos for pos in range(9) if self.raw_piece_at(pos) == Piece.Empty.value]
+        # return [pos for pos in range(9) if self.raw_piece_at(pos) == Piece.Empty.value]
+        return [
+            pos for pos in range(9) if (self.board >> pos * PIECE_BIT_WIDTH) & 0b11 == 0
+        ]
 
     def clone(self) -> Board:
         return Board(self.board)
@@ -54,16 +61,10 @@ class Board:
     def place_raw_piece_at(self, piece: int, pos: int):
         self.board |= piece << pos * PIECE_BIT_WIDTH
 
-    def place_piece_at(self, piece: Piece, pos: int):
-        self.place_raw_piece_at(piece.value, pos)
-
     def with_raw_play(self, piece: int, pos: int) -> Board:
         board = self.clone()
         board.place_raw_piece_at(piece, pos)
         return board
-
-    def with_play(self, piece: Piece, pos: int) -> Board:
-        return self.with_raw_play(piece.value, pos)
 
     def clear(self):
         self.board = 0
@@ -107,12 +108,17 @@ class Board:
     def __repr__(self) -> str:
         return (
             "["
-            + "".join(self.piece_at(pos).to_str() for pos in range(9)).replace(" ", ".")
+            + "".join(
+                Piece(self.raw_piece_at(pos)).to_str() for pos in range(9)
+            ).replace(" ", ".")
             + "]"
         )
 
     def print(self) -> None:
-        s = [self.piece_at(pos).to_colored_and_indexed_str(pos) for pos in range(9)]
+        s = [
+            Piece(self.raw_piece_at(pos)).to_colored_and_indexed_str(pos)
+            for pos in range(9)
+        ]
         print("+---+---+---+")
         print(f"| {s[0]} | {s[1]} | {s[2]} |")
         print("|---+---+---|")
@@ -178,7 +184,7 @@ class AiPlayer:
             random.randint(0, len(candidate_indices) - 1)
         ]
         self.current_choices.append(choice_key)
-        board.place_piece_at(self.piece, choice_pos)
+        board.place_raw_piece_at(self.piece.value, choice_pos)
 
     def save_to_file(self):
         with open("ai.json", "w") as file:
@@ -232,7 +238,7 @@ def start_interactive_game(ai: AiPlayer) -> InteractiveGameResult:
                 continue
             break
 
-        board.place_piece_at(Piece.Circle, choice)
+        board.place_raw_piece_at(Piece.Circle.value, choice)
         board.print()
         if board.piece_has_won(Piece.Circle):
             return InteractiveGameResult.PlayerWon
@@ -254,7 +260,7 @@ def train_ai() -> AiPlayer:
     for iterations in range(1, num_iterations + 1):
         if iterations % (num_iterations / 10) == 0:
             print(
-                f"{iterations * 100 / num_iterations:.2}% trained in {time.time() - time_when_starting:.2} seconds"
+                f"{(iterations * 100) / num_iterations}% trained in {time.time() - time_when_starting} seconds"
             )
             time_when_starting = time.time()
         board = Board()
