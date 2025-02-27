@@ -32,6 +32,7 @@ CPP_FILES =     \
 	board.cpp   \
 	deci_tree_ai.cpp \
 	nn_model.cpp \
+	minimax.cpp \
 	console.cpp \
 
 O_FILES = $(patsubst %.cpp,build/%.o,$(CPP_FILES))

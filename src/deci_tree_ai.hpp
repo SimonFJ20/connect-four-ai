@@ -11,17 +11,6 @@
 
 namespace connect_four {
 
-inline auto color_to_tile(Color color) -> Tile
-{
-    switch (color) {
-        case Color::Red:
-            return Tile::Red;
-        case Color::Blue:
-            return Tile::Blue;
-    }
-    std::unreachable();
-}
-
 using Weight = int16_t;
 [[maybe_unused]] static const constexpr Weight weight_max = INT16_MAX;
 [[maybe_unused]] static const constexpr Weight weight_min = INT16_MIN;

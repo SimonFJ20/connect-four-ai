@@ -5,7 +5,6 @@
 #include "printer.hpp"
 #include "tile.hpp"
 #include <cstddef>
-#include <print>
 #include <utility>
 
 namespace connect_four {
@@ -53,6 +52,41 @@ enum class Color : uint8_t {
     Blue,
 };
 
+[[maybe_unused]] inline auto color_opposite(Color color) -> Color
+{
+    switch (color) {
+        case Color::Red:
+            return Color::Blue;
+        case Color::Blue:
+            return Color::Red;
+    }
+    std::unreachable();
+}
+
+[[maybe_unused]] inline auto color_to_tile(Color color) -> Tile
+{
+    switch (color) {
+        case Color::Red:
+            return Tile::Red;
+        case Color::Blue:
+            return Tile::Blue;
+    }
+    std::unreachable();
+}
+
+[[maybe_unused]] inline auto color_from_tile(Tile tile) -> Color
+{
+    switch (tile) {
+        case Tile::Empty:
+            std::unreachable();
+        case Tile::Red:
+            return Color::Red;
+        case Tile::Blue:
+            return Color::Blue;
+    }
+    std::unreachable();
+}
+
 [[maybe_unused]] inline auto color_win_state(Color color) -> GameState
 {
     return color == Color::Red ? GameState::RedWon : GameState::BlueWon;
@@ -69,7 +103,7 @@ public:
     static constexpr const size_t height = 6;
 
     auto possible_moves() const -> PossibleMoves;
-    void insert(Col col, Tile tile);
+    auto insert(Col col, Tile tile) -> Pos;
     auto is_draw() const -> bool;
     auto game_state() const -> GameState;
     void print(Printer& printer) const;

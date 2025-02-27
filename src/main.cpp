@@ -1,6 +1,7 @@
 #include "board.hpp"
 #include "console.hpp"
 #include "deci_tree_ai.hpp"
+#include "minimax.hpp"
 #include "nn_model.hpp"
 #include <cstdint>
 #include <cstdlib>
@@ -40,6 +41,24 @@ public:
         // run_ais_against_each_other();
         // run_nnmodel_against_user();
         // run_nn_models_against_each_other();
+
+        auto board = Board();
+        auto minimax_red = Minimax(Color::Red);
+        auto minimax_blue = Minimax(Color::Blue);
+
+        auto current_color = Color::Red;
+        auto* current = &minimax_red;
+        auto* other = &minimax_blue;
+        while (board.game_state() == GameState::Ongoing) {
+            Col col = current->choose(board, 7);
+            board.insert(col, color_to_tile(current_color));
+            board.print(m_printer);
+
+            auto* temp = current;
+            current = other;
+            other = temp;
+            current_color = color_opposite(current_color);
+        }
     }
 
 private:

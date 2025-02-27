@@ -1,5 +1,6 @@
 #include "board.hpp"
 #include "tile.hpp"
+#include <utility>
 #include <vector>
 
 using namespace connect_four;
@@ -14,15 +15,16 @@ auto Board::possible_moves() const -> PossibleMoves
     return PossibleMoves(res);
 }
 
-void Board::insert(Col col, Tile tile)
+auto Board::insert(Col col, Tile tile) -> Pos
 {
     for (int64_t y = height - 1; y >= 0; --y) {
         auto pos = Pos { .col = col, .row = static_cast<size_t>(y) };
         if (this->tile(pos) == Tile::Empty) {
             set_tile(pos, tile);
-            return;
+            return pos;
         }
     }
+    std::unreachable();
 }
 
 auto Board::is_draw() const -> bool
