@@ -1,151 +1,184 @@
 from __future__ import annotations
 from enum import Enum
 import json
-from typing import Optional
 import random
+import time
 
-class Ch(Enum):
+
+class Piece(Enum):
     Empty = 0
     Cross = 1
     Circle = 2
 
-def ch_str_fancy(ch: Ch, i = 0) -> str:
-    match ch:
-        case Ch.Empty:
-            return f"\x1b[0;37m{i}\x1b[0m"
-        case Ch.Cross:
-            return "\x1b[1;91mX\x1b[0m"
-        case Ch.Circle:
-            return "\x1b[1;94mO\x1b[0m"
+    def to_colored_and_indexed_str(self, pos: int) -> str:
+        match self:
+            case Piece.Empty:
+                return f"\x1b[0;37m{pos}\x1b[0m"
+            case Piece.Cross:
+                return "\x1b[1;91mX\x1b[0m"
+            case Piece.Circle:
+                return "\x1b[1;94mO\x1b[0m"
 
-def ch_str(ch: Ch) -> str:
-    match ch:
-        case Ch.Empty:
-            return " "
-        case Ch.Cross:
-            return "X"
-        case Ch.Circle:
-            return "O"
+    def to_str(self) -> str:
+        match self:
+            case Piece.Empty:
+                return " "
+            case Piece.Cross:
+                return "X"
+            case Piece.Circle:
+                return "O"
 
-CH_WIDTH = 2
 
+PIECE_BIT_WIDTH = 2
+
+
+# the `raw_piece` methods avoids allocating a Piece as an object
+# because allocating an object is comparatively really, really slow, when done thousands of times in a hot loop
+# so for performance-critical functions we prefer `raw` functions
 class Board:
-    def __init__(self, val = 0) -> None:
-        self.val = val
+    def __init__(self, val=0) -> None:
+        self.board = val
+
+    def raw_piece_at(self, pos: int) -> int:
+        return (self.board >> pos * PIECE_BIT_WIDTH) & 0b11
+
+    def piece_at(self, pos: int) -> Piece:
+        return Piece(self.raw_piece_at(pos))
 
     def possible_plays(self) -> list[int]:
-        return [i for i in range(9) if (self.val >> i * CH_WIDTH & 0b11) == 0]
+        return [pos for pos in range(9) if self.raw_piece_at(pos) == Piece.Empty.value]
 
     def clone(self) -> Board:
-        return Board(self.val)
+        return Board(self.board)
 
-    def play(self, ch: Ch, i: int):
-        self.val |= ch.value << i * CH_WIDTH
+    def place_raw_piece_at(self, piece: int, pos: int):
+        self.board |= piece << pos * PIECE_BIT_WIDTH
 
-    def with_play(self, ch: Ch, i: int) -> Board:
+    def place_piece_at(self, piece: Piece, pos: int):
+        self.place_raw_piece_at(piece.value, pos)
+
+    def with_raw_play(self, piece: int, pos: int) -> Board:
         board = self.clone()
-        board.play(ch, i)
+        board.place_raw_piece_at(piece, pos)
         return board
 
+    def with_play(self, piece: Piece, pos: int) -> Board:
+        return self.with_raw_play(piece.value, pos)
+
+    def clear(self):
+        self.board = 0
+
     def rotate(self):
-        idcs = [6, 3, 0, 7, 4, 1, 8, 5, 2]
-        vals = [self.val >> i * CH_WIDTH & 0b11 for i in idcs]
-        self.val = 0
-        for i, v in enumerate(vals):
-            self.val |= v << i * CH_WIDTH
+        indices = [6, 3, 0, 7, 4, 1, 8, 5, 2]
+        pieces = [self.raw_piece_at(pos) for pos in indices]
+        self.clear()
+        for pos, piece in enumerate(pieces):
+            self.place_raw_piece_at(piece, pos)
 
     def flip(self):
-        idcs = [6, 7, 8, 3, 4, 5, 0, 1, 2]
-        vals = [self.val >> i * CH_WIDTH & 0b11 for i in idcs]
-        self.val = 0
-        for i, v in enumerate(vals):
-            self.val |= v << i * CH_WIDTH
+        indices = [6, 7, 8, 3, 4, 5, 0, 1, 2]
+        pieces = [self.raw_piece_at(pos) for pos in indices]
+        self.clear()
+        for pos, piece in enumerate(pieces):
+            self.place_raw_piece_at(piece, pos)
 
-    def key(self) -> int:
-        return self.val
+    def as_key(self) -> int:
+        return self.board
 
-    def place(self, i: int) -> Ch:
-        return Ch(self.val >> i * CH_WIDTH & 0b11)
-
-    def player_has_won(self, ch: Ch) -> bool:
+    def piece_has_won(self, piece: Piece) -> bool:
         combos = [
-            (0, 1, 2), (3, 4, 5), (6, 7, 8),
-            (0, 3, 6), (1, 4, 7), (2, 5, 8),
-            (0, 4, 8), (2, 4, 6),
+            (0, 1, 2),
+            (3, 4, 5),
+            (6, 7, 8),
+            (0, 3, 6),
+            (1, 4, 7),
+            (2, 5, 8),
+            (0, 4, 8),
+            (2, 4, 6),
         ]
         for combo in combos:
-            if all(self.place(p) == ch for p in list(combo)):
+            if all(self.raw_piece_at(pos) == piece.value for pos in list(combo)):
                 return True
         return False
 
-    def is_draw(self) -> bool:
+    def board_filled(self) -> bool:
         return len(self.possible_plays()) == 0
-                
+
     def __repr__(self) -> str:
-        # print(f"{self.val:b}".rjust(18, "0"))
-        return "[" + "".join(ch_str(Ch(self.val >> i * CH_WIDTH & 0b11)) for i in range(9)).replace(" ", ".") + "]"
+        return (
+            "["
+            + "".join(self.piece_at(pos).to_str() for pos in range(9)).replace(" ", ".")
+            + "]"
+        )
 
     def print(self) -> None:
-        s = [ch_str_fancy(Ch(self.val >> i * CH_WIDTH & 0b11), i) for i in range(9)]
-        print("#############")
-        print(f"# {s[0]} | {s[1]} | {s[2]} #")
-        print("#---+---+---#")
-        print(f"# {s[3]} | {s[4]} | {s[5]} #")
-        print("#---+---+---#")
-        print(f"# {s[6]} | {s[7]} | {s[8]} #")
-        print("#############")
+        s = [self.piece_at(pos).to_colored_and_indexed_str(pos) for pos in range(9)]
+        print("+---+---+---+")
+        print(f"| {s[0]} | {s[1]} | {s[2]} |")
+        print("|---+---+---|")
+        print(f"| {s[3]} | {s[4]} | {s[5]} |")
+        print("|---+---+---|")
+        print(f"| {s[6]} | {s[7]} | {s[8]} |")
+        print("+---+---+---+")
 
-START_WEIGHT = 20
-WIN_REWARD = 1
-PUNUSHMENT = 1
 
 class AiPlayer:
-    def __init__(self, ch: Ch) -> None:
+    START_WEIGHT = 20
+    REWARD = 1
+    PUNISHMENT = 1
+
+    def __init__(self, piece: Piece) -> None:
         self.choices: dict[int, int] = {}
         self.current_choices: list[int] = []
-        self.ch = ch
+        self.piece = piece
 
     def clear_choices(self):
         self.current_choices = []
 
-    def reward_win(self):
+    def reward(self):
         for choice in self.current_choices:
-            self.choices[choice] += WIN_REWARD
+            self.choices[choice] += self.REWARD
 
-    def punish_loss(self):
+    def punish(self):
         for choice in self.current_choices:
-            self.choices[choice] -= PUNUSHMENT
+            self.choices[choice] -= self.PUNISHMENT
 
     def interned_choice(self, choice: Board) -> Board:
-        for _ in range(2):
-            for _ in range(4):
-                key = choice.key()
-                if key in self.choices:
+        flips = 2
+        for _ in range(flips):
+            rotations = 4
+            for _ in range(rotations):
+                if choice.as_key() in self.choices:
                     return choice
                 choice.rotate()
             choice.flip()
-        key = choice.key()
-        self.choices[key] = START_WEIGHT
+        self.choices[choice.as_key()] = self.START_WEIGHT
         return choice
 
     def make_play(self, board: Board) -> None:
-        possible_choices = [(idx, board.with_play(self.ch, idx)) for idx in board.possible_plays()]
-        # candiate_weigth: Optional[int] = None
-        candiate_weigth = 0
-        candidate_idcs: list[tuple[int, int]] = []
-        for idx, choice in possible_choices:
+        possible_choices = [
+            (pos, board.with_raw_play(self.piece.value, pos))
+            for pos in board.possible_plays()
+        ]
+        candidate_weight = 0
+        candidate_indices: list[tuple[int, int]] = []
+        for pos, choice in possible_choices:
             choice = self.interned_choice(choice)
-            key = choice.key()
-            if not candiate_weigth or self.choices[key] > candiate_weigth + 4:
-                candiate_weigth = self.choices[key]
-                candidate_idcs = [(idx, key)]
-            elif self.choices[key] == candiate_weigth:
-                candidate_idcs.append((idx, key))
-        if len(candidate_idcs) == 0:
-            raise Exception()
-        (choice_idx, choice_key) = candidate_idcs[random.randint(0, len(candidate_idcs) - 1)]
+            key = choice.as_key()
+            if not candidate_weight or self.choices[key] > candidate_weight + 4:
+                candidate_weight = self.choices[key]
+                candidate_indices = [(pos, key)]
+            elif self.choices[key] == candidate_weight:
+                candidate_indices.append((pos, key))
+        if len(candidate_indices) == 0:
+            raise Exception(
+                "unreachable: board is not filled, so there should be at least one viable play"
+            )
+        (choice_pos, choice_key) = candidate_indices[
+            random.randint(0, len(candidate_indices) - 1)
+        ]
         self.current_choices.append(choice_key)
-        board.play(self.ch, choice_idx)
+        board.place_piece_at(self.piece, choice_pos)
 
     def save_to_file(self):
         with open("ai.json", "w") as file:
@@ -158,93 +191,120 @@ class AiPlayer:
             for key in vs:
                 self.choices[int(key)] = vs[key]
 
-def main():
-    p1 = AiPlayer(Ch.Cross)
-    p2 = AiPlayer(Ch.Circle)
 
-    games = 0
+class InteractiveGameResult(Enum):
+    Restarted = 0
+    Draw = 1
+    PlayerWon = 2
+    AiWon = 3
+
+
+def start_interactive_game(ai: AiPlayer) -> InteractiveGameResult:
+    board = Board()
+    ai.clear_choices()
+    while True:
+        print("AI's turn")
+        ai.make_play(board)
+        board.print()
+
+        if board.piece_has_won(Piece.Cross):
+            return InteractiveGameResult.AiWon
+        elif board.board_filled():
+            return InteractiveGameResult.Draw
+
+        print("Your turn (0..8)")
+        possible_choices = board.possible_plays()
+        while True:
+            text = input("> ").strip()
+            if text == ".save":
+                ai.save_to_file()
+                continue
+            elif text == ".load":
+                ai.load_from_file()
+                return InteractiveGameResult.Restarted
+            elif text == ".restart":
+                return InteractiveGameResult.Restarted
+            elif text == "":
+                continue
+            choice = int(text)
+            if choice not in possible_choices:
+                print("invalid choice")
+                continue
+            break
+
+        board.place_piece_at(Piece.Circle, choice)
+        board.print()
+        if board.piece_has_won(Piece.Circle):
+            return InteractiveGameResult.PlayerWon
+        elif board.board_filled():
+            return InteractiveGameResult.Draw
+
+
+def train_ai() -> AiPlayer:
+    p1 = AiPlayer(Piece.Cross)
+    p2 = AiPlayer(Piece.Circle)
+
     p1_wins = 0
     p2_wins = 0
     draws = 0
 
     print("Training P1 against P2...")
-
-    for _ in range(100000):
+    num_iterations = 100_000
+    time_when_starting = time.time()
+    for iterations in range(1, num_iterations + 1):
+        if iterations % (num_iterations / 10) == 0:
+            print(
+                f"{iterations * 100 / num_iterations:.2}% trained in {time.time() - time_when_starting:.2} seconds"
+            )
+            time_when_starting = time.time()
         board = Board()
         p1.clear_choices()
         p2.clear_choices()
         while True:
             p1.make_play(board)
-            if board.player_has_won(Ch.Cross):
+            if board.piece_has_won(Piece.Cross):
                 p1_wins += 1
-                p1.reward_win()
-                p2.punish_loss()
+                p1.reward()
+                p2.punish()
                 break
-            if board.is_draw():
+            if board.board_filled():
                 draws += 1
                 break
             p2.make_play(board)
-            if board.player_has_won(Ch.Circle):
+            if board.piece_has_won(Piece.Circle):
                 p2_wins += 1
-                p2.reward_win()
-                p1.punish_loss()
+                p2.reward()
+                p1.punish()
                 break
-            if board.is_draw():
+            if board.board_filled():
+                draws += 1
                 break
-        games += 1
 
-    print(f"Games {games}  Score: P1: {p1_wins}, P2: {p2_wins}, draws: {draws}")
+    print(
+        f"Games: {p1_wins + p2_wins + draws}\tScore: p1: {p1_wins}, p2: {p2_wins}, draws: {draws}"
+    )
+
+    return p1
+
+
+def main():
+    ai = train_ai()
 
     while True:
         print("\nNew game")
-        board = Board()
-        p1.clear_choices()
-        while True:
-            print("AI's turn")
-            p1.make_play(board)
-            board.print()
-            if board.player_has_won(Ch.Cross):
-                print("AI won!")
-                break
-            print("Your turn (0..8)")
-            if board.is_draw():
-                print("Draw!")
-                break
-            possible_choices = board.possible_plays()
-            should_restart = False
-            while True:
-                text = input("> ")
-                if text == ".save":
-                    p1.save_to_file()
-                    continue
-                elif text == ".load":
-                    p1.load_from_file()
-                    choice = 0
-                    should_restart = True
-                    break
-                elif text == ".restart":
-                    choice = 0
-                    should_restart = True
-                    break
-                elif text == "":
-                    continue
-                choice = int(text)
-                if choice not in possible_choices:
-                    print("invalid choice")
-                else:
-                    break
-            if should_restart:
-                break
-            board.play(Ch.Circle, choice)
-            board.print()
-            if board.player_has_won(Ch.Circle):
+        result = start_interactive_game(ai)
+        match result:
+            case InteractiveGameResult.PlayerWon:
                 print("Player won!")
-                break
-        games += 1
+            case InteractiveGameResult.AiWon:
+                print("AI won!")
+            case InteractiveGameResult.Draw:
+                print("Draw!")
+            case InteractiveGameResult.Restarted:
+                continue
 
 
 try:
     main()
 except KeyboardInterrupt:
     pass
-
