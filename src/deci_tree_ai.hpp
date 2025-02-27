@@ -21,7 +21,7 @@ using Choice = std::tuple<Board::Hash, Col>;
 class DeciTreeAi {
 public:
     DeciTreeAi(Tile color)
-        : m_color(color == Tile::Blue ? Color::Blue : Color::Red)
+        : m_color(color_from_tile(color))
     {
     }
 
@@ -38,6 +38,11 @@ public:
         return m_color;
     }
 
+    auto tile() const -> Tile
+    {
+        return color_to_tile(m_color);
+    }
+
     auto model_entries() const -> size_t
     {
         return m_choice_weights.size();
@@ -45,7 +50,8 @@ public:
 
     auto model_size() const -> size_t
     {
-        auto estimated_entry_size = sizeof(Board::Hash) + sizeof(ColWeights);
+        // auto estimated_entry_size = sizeof(Board::Hash) + sizeof(ColWeights);
+        size_t estimated_entry_size = 62;
         return model_entries() * estimated_entry_size;
     }
 

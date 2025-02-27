@@ -15,47 +15,6 @@ auto Board::possible_moves() const -> PossibleMoves
     return PossibleMoves(res);
 }
 
-auto Board::win_possibilities_at_pos(Color color, uint16_t col, uint16_t row) const -> size_t
-{
-    if (col >= width || row >= height) {
-        return 0;
-    }
-
-    auto directions = std::array<std::tuple<size_t, size_t>, 4> {
-        std::tuple { 1, -1 },
-        std::tuple { 1, 0 },
-        std::tuple { 0, 1 },
-        std::tuple { 1, 1 },
-    };
-
-    size_t result = 0;
-
-    for (auto direction : directions) {
-        for (size_t i = 0; i <= 3; ++i) {
-            bool can_win = true;
-
-            for (size_t j = i - 3; j <= i; ++j) {
-                auto x = col + std::get<0>(direction) * j;
-                auto y = row + std::get<1>(direction) * j;
-
-                if (col > width || row > height) {
-                    return 0;
-                }
-
-                if (tile({ x, y }) != Tile::Empty && tile({ x, y }) != color_to_tile(color)) {
-                    can_win = false;
-                }
-            }
-
-            if (can_win) {
-                result++;
-            }
-        }
-    }
-
-    return result;
-}
-
 auto Board::insert(Col col, Tile tile) -> Pos
 {
     for (int64_t y = height - 1; y >= 0; --y) {
@@ -110,9 +69,9 @@ auto Board::game_state() const -> GameState
 {
     constexpr auto patterns = make_patterns();
 
-    for (auto& [pos, tiles] : patterns) {
-        for (size_t x = 0; x < width; ++x) {
-            for (size_t y = 0; y < height; ++y) {
+    for (auto& [size, tiles] : patterns) {
+        for (size_t x = 0; x < width - size.col + 1; ++x) {
+            for (size_t y = 0; y < height - size.row + 1; ++y) {
                 bool has_won = true;
                 auto first_tile = tile(Pos { x, y } + tiles[0]);
 
@@ -169,7 +128,7 @@ auto Board::flipped_hash() const -> size_t
     static_assert(sizeof(size_t) == sizeof(uint64_t));
 
     size_t res = 0;
-    for (size_t col = width; col < width; ++col) {
+    for (size_t col = 0; col < width; ++col) {
         auto col_res = col_hash(col);
         res |= col_res << 9 * (width - col - 1);
     }
@@ -195,6 +154,49 @@ auto Board::col_hash(Col col) const -> size_t
     }
     hash |= col_height << 6;
     return hash;
+}
+
+auto Board::win_possibilities_at_pos(
+    Color color, uint16_t col, uint16_t row) const -> size_t
+{
+    if (col >= width || row >= height) {
+        return 0;
+    }
+
+    auto directions = std::array<std::tuple<size_t, size_t>, 4> {
+        std::tuple { 1, -1 },
+        std::tuple { 1, 0 },
+        std::tuple { 0, 1 },
+        std::tuple { 1, 1 },
+    };
+
+    size_t result = 0;
+
+    for (auto direction : directions) {
+        for (size_t i = 0; i <= 3; ++i) {
+            bool can_win = true;
+
+            for (size_t j = i - 3; j <= i; ++j) {
+                auto x = col + std::get<0>(direction) * j;
+                auto y = row + std::get<1>(direction) * j;
+
+                if (col > width || row > height) {
+                    return 0;
+                }
+
+                if (tile({ x, y }) != Tile::Empty
+                    && tile({ x, y }) != color_to_tile(color)) {
+                    can_win = false;
+                }
+            }
+
+            if (can_win) {
+                result++;
+            }
+        }
+    }
+
+    return result;
 }
 
 auto Board::as_mx1() const -> Mx1

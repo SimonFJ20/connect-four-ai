@@ -23,42 +23,42 @@ class Program {
 private:
     ConsolePrinter m_printer;
 
-    DeciTreeAi ai1;
-    DeciTreeAi ai2;
+    DeciTreeAi m_bot1;
+    DeciTreeAi m_bot2;
 
     Model m_model;
 
 public:
     Program()
-        : ai1(Tile::Red)
-        , ai2(Tile::Blue)
+        : m_bot1(Tile::Red)
+        , m_bot2(Tile::Blue)
         , m_model({ 42, 42, 18, 6 })
     {
     }
 
     void run()
     {
-        // run_ais_against_each_other();
+        run_ais_against_each_other();
         // run_nnmodel_against_user();
         // run_nn_models_against_each_other();
 
-        auto board = Board();
-        auto minimax_red = Minimax(Color::Red);
-        auto minimax_blue = Minimax(Color::Blue);
-
-        auto current_color = Color::Red;
-        auto* current = &minimax_red;
-        auto* other = &minimax_blue;
-        while (board.game_state() == GameState::Ongoing) {
-            Col col = current->choose(board, 7);
-            board.insert(col, color_to_tile(current_color));
-            board.print(m_printer);
-
-            auto* temp = current;
-            current = other;
-            other = temp;
-            current_color = color_opposite(current_color);
-        }
+        // auto board = Board();
+        // auto minimax_red = Minimax(Color::Red);
+        // auto minimax_blue = Minimax(Color::Blue);
+        //
+        // auto current_color = Color::Red;
+        // auto* current = &minimax_red;
+        // auto* other = &minimax_blue;
+        // while (board.game_state() == GameState::Ongoing) {
+        //     Col col = current->choose(board, 7);
+        //     board.insert(col, color_to_tile(current_color));
+        //     board.print(m_printer);
+        //
+        //     auto* temp = current;
+        //     current = other;
+        //     other = temp;
+        //     current_color = color_opposite(current_color);
+        // }
     }
 
 private:
@@ -145,7 +145,7 @@ private:
         while (true) {
             auto board = Board();
 
-            ai1.new_game();
+            m_bot1.new_game();
 
             while (true) {
                 std::println();
@@ -325,57 +325,64 @@ private:
         std::unreachable();
     }
 
+    using Wins = std::unordered_map<Color, int>;
+
     void run_ais_against_each_other()
     {
-        constexpr auto training_iters = 10'000'000;
+        constexpr auto training_iters = 1'000'000;
 
         auto l = std::locale("en_DK.UTF-8");
         std::cout << std::format(
             l, "Training AIs for {:L} iterations...\n", training_iters);
 
+        auto bot1 = DeciTreeAi(Tile::Red);
+        auto bot2 = DeciTreeAi(Tile::Blue);
+
+        auto wins = Wins {
+            { bot1.color(), 0 },
+            { bot2.color(), 0 },
+        };
+
         for (int i = 0; i < training_iters; ++i) {
             auto board = Board();
 
-            ai1.new_game();
-            ai2.new_game();
+            bot1.new_game();
+            bot2.new_game();
 
+            auto* current = &bot1;
+            auto* other = &bot2;
             while (true) {
-                size_t col = ai1.next_move(board);
-                board.insert(col, Tile::Red);
+                size_t col = current->next_move(board);
+                board.insert(col, current->tile());
 
-                if (handle_ai_traning_game_state(board, ai1, ai2)
+                if (handle_ai_traning_game_state(board, *current, *other, wins)
                     == ControlFlow::Break)
                     break;
 
-                col = ai2.next_move(board);
-                board.insert(col, Tile::Blue);
-
-                if (handle_ai_traning_game_state(board, ai2, ai1)
-                    == ControlFlow::Break)
-                    break;
+                std::swap(current, other);
             }
         }
 
-        std::println("ai nr\tsize in entries\tsize in bytes");
-        std::cout << std::format(
-            l, "1\t{:L}\t\t{:L}\n", ai1.model_entries(), ai1.model_size());
-        std::cout << std::format(
-            l, "2\t{:L}\t\t{:L}\n", ai2.model_entries(), ai2.model_size());
+        std::println("color\t   entries\t  est. bytes\t   wins");
+        std::cout << std::format(l, "{}\t{:10L}\t{:12L}\t{:7}\n",
+            bot1.color() == Color::Red ? "  Red" : " Blue",
+            bot1.model_entries(), bot1.model_size(), wins.at(bot1.color()));
+        std::cout << std::format(l, "{}\t{:10L}\t{:12L}\t{:7}\n",
+            bot2.color() == Color::Red ? "  Red" : " Blue",
+            bot2.model_entries(), bot2.model_size(), wins.at(bot1.color()));
 
-        // std::exit(0);
+        bot1.set_exploration(0);
+        bot2.set_exploration(0);
 
         // for (;;) {
         //     auto board = Board();
-        //
-        //     ai1.new_game();
-        //     ai2.new_game();
         //
         //     while (true) {
         //         board.print(m_printer);
         //         std::println("Red's turn");
         //         fgetc(stdin);
         //
-        //         size_t col = ai1.next_move(board);
+        //         size_t col = bot1.next_move(board);
         //         board.insert(col, Tile::Red);
         //
         //         if (check_game_state_and_print(board) == ControlFlow::Break)
@@ -385,7 +392,7 @@ private:
         //         std::println("Blue's turn");
         //         fgetc(stdin);
         //
-        //         col = ai2.next_move(board);
+        //         col = bot1.next_move(board);
         //         board.insert(col, Tile::Blue);
         //
         //         if (check_game_state_and_print(board) == ControlFlow::Break)
@@ -396,19 +403,17 @@ private:
         //     std::println("\n");
         // }
 
-        ai1.set_exploration(0);
-
         while (true) {
             auto board = Board();
 
-            ai1.new_game();
+            bot1.new_game();
 
             while (true) {
                 std::println();
                 std::println("AI's turn");
                 board.print(m_printer);
 
-                size_t col = ai1.next_move(board);
+                size_t col = bot1.next_move(board);
                 board.insert(col, Tile::Red);
 
                 if (check_game_state_and_print(board) == ControlFlow::Break)
@@ -428,17 +433,19 @@ private:
     }
 
     ControlFlow handle_ai_traning_game_state(
-        Board& board, DeciTreeAi& turnee, DeciTreeAi& other)
+        Board& board, DeciTreeAi& turnee, DeciTreeAi& other, Wins& wins)
     {
         auto state = board.game_state();
         if (state == color_win_state(turnee.color())) {
             turnee.report_win();
             other.report_loss();
+            wins.at(turnee.color()) += 1;
             return ControlFlow::Break;
         }
         if (state == color_lose_state(turnee.color())) {
             turnee.report_loss();
             other.report_win();
+            wins.at(other.color()) += 1;
             return ControlFlow::Break;
         }
         if (state == GameState::Draw) {

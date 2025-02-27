@@ -81,7 +81,6 @@ Model::Model(std::vector<size_t> layers)
     , m_weights()
     , m_biases()
 {
-    std::println("hello world");
     m_weights.reserve(m_layers.size() - 1);
     m_biases.reserve(m_layers.size() - 1);
 
