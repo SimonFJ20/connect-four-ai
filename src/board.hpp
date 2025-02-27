@@ -102,6 +102,7 @@ public:
     static constexpr const size_t width = 7;
     static constexpr const size_t height = 6;
 
+    auto win_possibilities_at_pos(Color color, uint16_t col, uint16_t row) const -> size_t;
     auto possible_moves() const -> PossibleMoves;
     auto insert(Col col, Tile tile) -> Pos;
     auto is_draw() const -> bool;

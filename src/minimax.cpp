@@ -57,8 +57,30 @@ auto Minimax::after_move(Board board, size_t depth, Color turn,
     }
 
     if (depth == 0) {
-        return { .points = 10, .col = 0, .type = ChoiceType::Result };
+        return {
+            .points = value_of_board(board, turn) * 8,
+            .col = 0,
+            .type = ChoiceType::Result,
+        };
     }
 
     return find_move(board, depth - 1, turn);
 }
+
+auto Minimax::value_of_board(Board board, Color turn) const -> int32_t
+{
+    int32_t value = 0;
+
+    for (uint16_t col = 0; col < board.width; ++col) {
+        for (uint16_t row = 0; row < board.height; ++row) {
+            auto possible_wins = (int32_t)board.win_possibilities_at_pos(turn, col, row);
+            auto opponent_possible_wins = (int32_t)board.win_possibilities_at_pos(color_opposite(turn), col, row);
+
+            value += possible_wins;
+            value -= opponent_possible_wins;
+        }
+    }
+
+    return value;
+}
+

@@ -15,6 +15,47 @@ auto Board::possible_moves() const -> PossibleMoves
     return PossibleMoves(res);
 }
 
+auto Board::win_possibilities_at_pos(Color color, uint16_t col, uint16_t row) const -> size_t
+{
+    if (col >= width || row >= height) {
+        return 0;
+    }
+
+    auto directions = std::array<std::tuple<size_t, size_t>, 4> {
+        std::tuple { 1, -1 },
+        std::tuple { 1, 0 },
+        std::tuple { 0, 1 },
+        std::tuple { 1, 1 },
+    };
+
+    size_t result = 0;
+
+    for (auto direction : directions) {
+        for (size_t i = 0; i <= 3; ++i) {
+            bool can_win = true;
+
+            for (size_t j = i - 3; j <= i; ++j) {
+                auto col = std::get<0>(direction) * j;
+                auto row = std::get<1>(direction) * j;
+
+                if (col >= width || row > height) {
+                    return 0;
+                }
+
+                if (tile({ col, row }) != Tile::Empty && tile({ col, row }) != color_to_tile(color)) {
+                    can_win = false;
+                }
+            }
+
+            if (can_win) {
+                result++;
+            }
+        }
+    }
+
+    return result;
+}
+
 auto Board::insert(Col col, Tile tile) -> Pos
 {
     for (int64_t y = height - 1; y >= 0; --y) {
