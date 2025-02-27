@@ -55,19 +55,51 @@ class Model:
         mean_error = error_acc / len(data)
         mean_square_error = square_error_acc / len(data)
 
-        self.backpropagate(mean_square_error)
-        return mean_square_error.item()
-        
-    def backpropagate(self, loss: Arr) -> None:
-        self.backpropagate_layer(loss, len(self.layer_sizes) - 2)
+        #self.backpropagate(mean_square_error)
+        self.backprop_layer(len(self.layer_sizes) - 2, 0, data[0])
 
-    def backpropagate_layer(self, loss: Arr, layer_idx: int) -> None:
-        delta = loss * sigmoid_deriv(self.values_means[layer_idx])
-        if layer_idx > 0:
-            next_error = np.dot(delta, self.weights[layer_idx].T)
-            self.backpropagate_layer(next_error, layer_idx - 1)
-        self.weights[layer_idx] += np.dot(self.values_means[layer_idx].T, delta) * self.learning_rate
-        self.biases[layer_idx] += np.sum(delta, axis=0, keepdims=True) * self.learning_rate
+    def backprop_layer(self, layer_idx: int, neuron_idx: int, test: tuple[Arr, Arr]) -> Arr:
+        input, correct = test
+
+        weight_changes = np.empty_like(self.weights[layer_idx])
+        bias_changes = np.empty_like(self.biases[layer_idx])
+
+        # forward propagate to calculate activation
+        activations = []
+        zs = []
+
+        outputs = input
+        for i in range(len(self.layer_sizes) - 1):
+            l0 = outputs
+            l1 = l0 * self.weights[i].T
+            l2 = l1.T + self.biases[i]
+            z = l2.T.sum(axis=1)
+            a = sigmoid(z)
+
+            activations.append(a)
+            zs.append(z)
+
+            outputs = a
+
+        a = activations[layer_idx][neuron_idx]
+        z = zs[layer_idx][neuron_idx]
+        y = correct[0]
+
+        # calculate derivatives
+        derivative1 = 2 * (a - outputs[neuron_idx])
+
+        pass
+
+   # def backpropagate(self, loss: Arr) -> None:
+   #     self.backpropagate_layer(loss, len(self.layer_sizes) - 2)
+
+   # def backpropagate_layer(self, loss: Arr, layer_idx: int) -> None:
+   #     delta = loss * sigmoid_deriv(self.values_means[layer_idx])
+   #     if layer_idx > 0:
+   #         next_error = np.dot(delta, self.weights[layer_idx].T)
+   #         self.backpropagate_layer(next_error, layer_idx - 1)
+   #     self.weights[layer_idx] += np.dot(self.values_means[layer_idx].T, delta) * self.learning_rate
+   #     self.biases[layer_idx] += np.sum(delta, axis=0, keepdims=True) * self.learning_rate
 
     def mutate(self) -> None:
         weight_mag = 1.0

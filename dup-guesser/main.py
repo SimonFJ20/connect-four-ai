@@ -87,7 +87,7 @@ training_iterations = 100
 #
 # bar.print_finished();
 
-bar = Progbar(100, hidden=False)
+bar = Progbar(100, hidden=True)
 bar.print_initial()
 for i in range(100):
     bar.print_iter(i / 100);

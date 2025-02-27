@@ -102,6 +102,57 @@ Mx1* model_feed(Model* model, const Mx1* inputs)
     return outputs;
 }
 
+void model_update_mini_batch()
+{
+
+}
+
+Mx1* calculate_weighted_input(Model* model, Mx1* activation, size_t layer_idx)
+{
+    Mx2* layer = mx2_clone(model->weights[layer_idx]);
+    mx2_transpose(layer);
+
+    mx2_mx1_multiply(layer, activation);
+    mx2_transpose(layer);
+
+    mx2_mx1_add(layer, model->biases[layer_idx]);
+    Mx1* z = mx2_sum(layer);
+
+    return z;
+}
+
+Mx1* backprop(Model* model, Mx1* x, Mx1* y)
+{
+    size_t layer_idcs = model->layers_size - 1;
+
+    Mx1* activations[layer_idcs + 1];
+    activations[0] = x;
+
+    Mx1* zs[layer_idcs];
+
+    Mx1* activation = x;
+    for (size_t layer_idx = 0; layer_idx < layer_idcs; ++layer_idx) {
+        Mx1* z = calculate_weighted_input(model, activation, layer_idx);
+        zs[layer_idx] = z;
+
+        activation = z;
+        mx1_apply(activation, sigmoid);
+
+        activations[layer_idx + 1] = activation;
+    }
+
+    Mx1* delta = activations[layer_idcs];
+    mx1_sub(delta, y);
+
+    Mx1* deriv = mx1_clone(zs[layer_idcs - 1]);
+    mx1_apply(deriv, sigmoid_deriv);
+
+    nabla_b = calloc(model->biases_size, sizeof(Mx1*));
+    nabla_w = calloc(model->weights_size, sizeof(Mx2*));
+
+
+}
+
 static inline double mutation_dec(double in)
 {
     (void)in;
