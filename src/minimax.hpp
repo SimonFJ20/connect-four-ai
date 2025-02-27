@@ -30,7 +30,7 @@ private:
     auto find_move(Board board, size_t depth, Color turn) const -> Choice;
     auto after_move(Board board, size_t depth, Color turn, Pos pos) const
         -> Choice;
-    auto value_of_board(Board board, Color turn) const -> int32_t;
+    auto value_of_board(Board board) const -> int32_t;
 
     Color m_color;
     Tile m_tile;

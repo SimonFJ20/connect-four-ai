@@ -35,14 +35,14 @@ auto Board::win_possibilities_at_pos(Color color, uint16_t col, uint16_t row) co
             bool can_win = true;
 
             for (size_t j = i - 3; j <= i; ++j) {
-                auto col = std::get<0>(direction) * j;
-                auto row = std::get<1>(direction) * j;
+                auto x = col + std::get<0>(direction) * j;
+                auto y = row + std::get<1>(direction) * j;
 
-                if (col >= width || row > height) {
+                if (col > width || row > height) {
                     return 0;
                 }
 
-                if (tile({ col, row }) != Tile::Empty && tile({ col, row }) != color_to_tile(color)) {
+                if (tile({ x, y }) != Tile::Empty && tile({ x, y }) != color_to_tile(color)) {
                     can_win = false;
                 }
             }
