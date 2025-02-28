@@ -1,24 +1,24 @@
 from __future__ import annotations
-from piece import EMPTY, piece_to_colored_and_indexed_str, piece_to_str
+from piece import EMPTY, piece_board_str, piece_to_str
 
 
 class Board:
     PIECE_BIT_WIDTH = 2
 
-    def __init__(self, val=0) -> None:
-        self.board = val
+    def __init__(self, bitfield=0) -> None:
+        self.bitfield = bitfield
 
     def piece_at(self, pos: int) -> int:
-        return (self.board >> pos * self.PIECE_BIT_WIDTH) & 0b11
+        return (self.bitfield >> pos * self.PIECE_BIT_WIDTH) & 0b11
 
     def possible_plays(self) -> list[int]:
         return [pos for pos in range(9) if self.piece_at(pos) == EMPTY]
 
     def clone(self) -> Board:
-        return Board(self.board)
+        return Board(self.bitfield)
 
     def place_piece_at(self, piece: int, pos: int):
-        self.board |= piece << (pos * self.PIECE_BIT_WIDTH)
+        self.bitfield |= piece << (pos * self.PIECE_BIT_WIDTH)
 
     def with_play(self, piece: int, pos: int) -> Board:
         board = self.clone()
@@ -26,7 +26,7 @@ class Board:
         return board
 
     def clear(self):
-        self.board = 0
+        self.bitfield = 0
 
     def rotate(self):
         indices = [6, 3, 0, 7, 4, 1, 8, 5, 2]
@@ -43,7 +43,7 @@ class Board:
             self.place_piece_at(piece, pos)
 
     def as_key(self) -> int:
-        return self.board
+        return self.bitfield
 
     def piece_has_won(self, piece: int) -> bool:
         combos = [
@@ -75,7 +75,7 @@ class Board:
 
     def print(self) -> None:
         s = [
-            piece_to_colored_and_indexed_str(self.piece_at(pos), pos)
+            piece_board_str(self.piece_at(pos), pos)
             for pos in range(9)
         ]
         print("+---+---+---+")

@@ -1,7 +1,6 @@
-from __future__ import annotations
-from board import Board
 import json
 import random
+from board import Board
 from piece import CROSS, CIRCLE
 from game import start_game, GameResult, Player
 
@@ -94,7 +93,7 @@ class DTModel(Player):
             for key in vs:
                 self.choices[int(key)] = vs[key]
 
-def train(model: DTModel, iterations: int) -> None:
+def train_dt_model(model: DTModel, iterations: int) -> None:
     turnee = model
     other = DTModel(CROSS if turnee.piece == CIRCLE else CIRCLE)
 
