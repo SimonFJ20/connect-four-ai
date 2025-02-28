@@ -1,10 +1,100 @@
 from __future__ import annotations
-from enum import Enum
 import json
 import random
 import time
+
 from piece import Piece
-from raw_board import Board
+
+# an example of an implementation board that isn't working with raw integers, i.e., how you'd do it in an ideal world where performance didn't matter (or where python wasn't terrible at optimizing)
+# this is about ~15 seconds per 10_000 iterations on my machine, as opposed to ~5-6 seconds for the other implementation of `Board`
+
+
+
+
+
+class Board:
+    PIECE_BIT_WIDTH = 2
+
+    def __init__(self, val=0) -> None:
+        self.board = val
+
+    def piece_at(self, pos: int) -> Piece:
+        return Piece((self.board >> pos * self.PIECE_BIT_WIDTH) & 0b11)
+
+    def possible_plays(self) -> list[int]:
+        return [pos for pos in range(9) if self.piece_at(pos) == Piece.Empty]
+
+    def clone(self) -> Board:
+        return Board(self.board)
+
+    def place_piece_at(self, piece: Piece, pos: int):
+        self.board |= (piece.value) << (pos * PIECE_BIT_WIDTH)
+
+    def with_play(self, piece: Piece, pos: int) -> Board:
+        board = self.clone()
+        board.place_piece_at(piece, pos)
+        return board
+
+    def clear(self):
+        self.board = 0
+
+    def rotate(self):
+        indices = [6, 3, 0, 7, 4, 1, 8, 5, 2]
+        pieces = [self.piece_at(pos) for pos in indices]
+        self.clear()
+        for pos, piece in enumerate(pieces):
+            self.place_piece_at(piece, pos)
+
+    def flip(self):
+        indices = [6, 7, 8, 3, 4, 5, 0, 1, 2]
+        pieces = [self.piece_at(pos) for pos in indices]
+        self.clear()
+        for pos, piece in enumerate(pieces):
+            self.place_piece_at(piece, pos)
+
+    def as_key(self) -> int:
+        return self.board
+
+    def piece_has_won(self, piece: Piece) -> bool:
+        combos = [
+            (0, 1, 2),
+            (3, 4, 5),
+            (6, 7, 8),
+            (0, 3, 6),
+            (1, 4, 7),
+            (2, 5, 8),
+            (0, 4, 8),
+            (2, 4, 6),
+        ]
+        for combo in combos:
+            if all(self.piece_at(pos) == piece for pos in list(combo)):
+                return True
+        return False
+
+    def board_filled(self) -> bool:
+        return len(self.possible_plays()) == 0
+
+    def __repr__(self) -> str:
+        return (
+            "["
+            + "".join(
+                Piece(self.piece_at(pos)).to_str() for pos in range(9)
+            ).replace(" ", ".")
+            + "]"
+        )
+
+    def print(self) -> None:
+        s = [
+            Piece(self.piece_at(pos)).to_colored_and_indexed_str(pos)
+            for pos in range(9)
+        ]
+        print("+---+---+---+")
+        print(f"| {s[0]} | {s[1]} | {s[2]} |")
+        print("|---+---+---|")
+        print(f"| {s[3]} | {s[4]} | {s[5]} |")
+        print("|---+---+---|")
+        print(f"| {s[6]} | {s[7]} | {s[8]} |")
+        print("+---+---+---+")
 
 
 class AiPlayer:
@@ -40,49 +130,30 @@ class AiPlayer:
         self.choices[choice.as_key()] = self.START_WEIGHT
         return choice
 
-    def viable_choices(self, board: Board) -> list[tuple[int, int]]:
-        def candidate_weight(choice: tuple[int, int]) -> int:
-            return self.choices[choice[1]]
-
-        def board_with_play(pos: int) -> Board:
-            return board.with_raw_play(self.piece.value, pos)
-
-        def interned_board(choice: Board) -> int:
-            return self.interned_choice(choice).as_key()
-
-        # maybe a little spooky - a function that returns a function
-        # the alternative was some really ugly lambdas that didn't sit right with me
-        def candidate_within_tolerance(max_weight: int):
-            def within_tolerance(candidate: tuple[int, int]) -> bool:
-                CANDIDATE_TOLERANCE = 4
-                weight = candidate_weight(candidate)
-                return weight >= max_weight - CANDIDATE_TOLERANCE
-
-            return within_tolerance
-
-        def choice_at_position(pos: int) -> tuple[int, int]:
-            return (pos, interned_board(board_with_play(pos)))
-
-        candidates = [choice_at_position(pos) for pos in board.possible_plays()]
-        max_weight = max(map(candidate_weight, candidates))
-        candidates = filter(candidate_within_tolerance(max_weight), candidates)
-        candidates = list(candidates)
-
-        if len(candidates) == 0:
+    def make_play(self, board: Board) -> None:
+        possible_choices = [
+            (pos, board.with_play(self.piece, pos))
+            for pos in board.possible_plays()
+        ]
+        candidate_weight = 0
+        candidate_indices: list[tuple[int, int]] = []
+        for pos, choice in possible_choices:
+            choice = self.interned_choice(choice)
+            key = choice.as_key()
+            if not candidate_weight or self.choices[key] > candidate_weight + 4:
+                candidate_weight = self.choices[key]
+                candidate_indices = [(pos, key)]
+            elif self.choices[key] == candidate_weight:
+                candidate_indices.append((pos, key))
+        if len(candidate_indices) == 0:
             raise Exception(
                 "unreachable: board is not filled, so there should be at least one viable play"
             )
-
-        return candidates
-
-    def random_viable_choice(self, board: Board) -> tuple[int, int]:
-        candidate_indices = self.viable_choices(board)
-        return candidate_indices[random.randint(0, len(candidate_indices) - 1)]
-
-    def make_play(self, board: Board) -> None:
-        (choice_pos, choice_key) = self.random_viable_choice(board)
+        (choice_pos, choice_key) = candidate_indices[
+            random.randint(0, len(candidate_indices) - 1)
+        ]
         self.current_choices.append(choice_key)
-        board.place_raw_piece_at(self.piece.value, choice_pos)
+        board.place_piece_at(self.piece, choice_pos)
 
     def save_to_file(self):
         with open("ai.json", "w") as file:
@@ -136,7 +207,7 @@ def start_interactive_game(ai: AiPlayer) -> InteractiveGameResult:
                 continue
             break
 
-        board.place_raw_piece_at(Piece.Circle.value, choice)
+        board.place_piece_at(Piece.Circle.value, choice)
         board.print()
         if board.piece_has_won(Piece.Circle):
             return InteractiveGameResult.PlayerWon
@@ -153,17 +224,14 @@ def train_ai() -> AiPlayer:
     draws = 0
 
     print("Training P1 against P2...")
-    max_iterations = 100_000
-    iterations_per_batch = max_iterations / 10
-    batch_started_at = time.time()
-
-    for iterations in range(1, max_iterations + 1):
-        if iterations % iterations_per_batch == 0:
-            iterations_percentage = (iterations * 100) / max_iterations
-            batch_ended_at = time.time()
-            batch_took = batch_ended_at - batch_started_at
-            print(f"{iterations_percentage}% trained in {batch_took} seconds")
-            batch_started_at = time.time()
+    num_iterations = 100_000
+    time_when_starting = time.time()
+    for iterations in range(1, num_iterations + 1):
+        if iterations % (num_iterations / 10) == 0:
+            print(
+                f"{(iterations * 100) / num_iterations}% trained in {time.time() - time_when_starting} seconds"
+            )
+            time_when_starting = time.time()
         board = Board()
         p1.clear_choices()
         p2.clear_choices()
