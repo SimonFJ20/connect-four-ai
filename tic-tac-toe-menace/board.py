@@ -1,28 +1,26 @@
 from __future__ import annotations
-from piece import Piece
+from piece import EMPTY, piece_to_colored_and_indexed_str, piece_to_str
 
 
-# an example of an implementation board that isn't working with raw integers, i.e., how you'd do it in an ideal world where performance didn't matter (or where python wasn't terrible at optimizing)
-# this is about ~15 seconds per 10_000 iterations on my machine, as opposed to ~5-6 seconds for the other implementation of `Board`
 class Board:
     PIECE_BIT_WIDTH = 2
 
     def __init__(self, val=0) -> None:
         self.board = val
 
-    def piece_at(self, pos: int) -> Piece:
-        return Piece((self.board >> pos * self.PIECE_BIT_WIDTH) & 0b11)
+    def piece_at(self, pos: int) -> int:
+        return (self.board >> pos * self.PIECE_BIT_WIDTH) & 0b11
 
     def possible_plays(self) -> list[int]:
-        return [pos for pos in range(9) if self.piece_at(pos) == Piece.Empty]
+        return [pos for pos in range(9) if self.piece_at(pos) == EMPTY]
 
     def clone(self) -> Board:
         return Board(self.board)
 
-    def place_piece_at(self, piece: Piece, pos: int):
-        self.board |= (piece.value) << (pos * self.PIECE_BIT_WIDTH)
+    def place_piece_at(self, piece: int, pos: int):
+        self.board |= piece << (pos * self.PIECE_BIT_WIDTH)
 
-    def with_play(self, piece: Piece, pos: int) -> Board:
+    def with_play(self, piece: int, pos: int) -> Board:
         board = self.clone()
         board.place_piece_at(piece, pos)
         return board
@@ -47,7 +45,7 @@ class Board:
     def as_key(self) -> int:
         return self.board
 
-    def piece_has_won(self, piece: Piece) -> bool:
+    def piece_has_won(self, piece: int) -> bool:
         combos = [
             (0, 1, 2),
             (3, 4, 5),
@@ -69,7 +67,7 @@ class Board:
     def __repr__(self) -> str:
         return (
             "["
-            + "".join(Piece(self.piece_at(pos)).to_str() for pos in range(9)).replace(
+            + "".join(piece_to_str(self.piece_at(pos)) for pos in range(9)).replace(
                 " ", "."
             )
             + "]"
@@ -77,7 +75,7 @@ class Board:
 
     def print(self) -> None:
         s = [
-            Piece(self.piece_at(pos)).to_colored_and_indexed_str(pos)
+            piece_to_colored_and_indexed_str(self.piece_at(pos), pos)
             for pos in range(9)
         ]
         print("+---+---+---+")

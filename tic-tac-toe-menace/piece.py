@@ -1,25 +1,25 @@
-from enum import Enum
+EMPTY = 0
+CROSS = 1
+CIRCLE = 2
 
-class Piece(Enum):
-    Empty = 0
-    Cross = 1
-    Circle = 2
 
-    def to_colored_and_indexed_str(self, pos: int) -> str:
-        match self:
-            case Piece.Empty:
-                return f"\x1b[0;37m{pos}\x1b[0m"
-            case Piece.Cross:
-                return "\x1b[1;91mX\x1b[0m"
-            case Piece.Circle:
-                return "\x1b[1;94mO\x1b[0m"
+def piece_to_colored_and_indexed_str(piece: int, pos: int) -> str:
+    match piece:
+        case 0:
+            return f"\x1b[0;37m{pos}\x1b[0m"
+        case 1:
+            return "\x1b[1;91mX\x1b[0m"
+        case 2:
+            return "\x1b[1;94mO\x1b[0m"
+    raise Exception(f"invalid piece {piece}")
 
-    def to_str(self) -> str:
-        match self:
-            case Piece.Empty:
-                return " "
-            case Piece.Cross:
-                return "X"
-            case Piece.Circle:
-                return "O"
 
+def piece_to_str(piece: int) -> str:
+    match piece:
+        case 0:
+            return " "
+        case 1:
+            return "X"
+        case 2:
+            return "O"
+    raise Exception(f"invalid piece {piece}")
