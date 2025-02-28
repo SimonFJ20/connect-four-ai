@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <iostream>
+#include <print>
 
 using namespace connect_four;
 
@@ -38,6 +39,7 @@ auto DeciTreeAi::next_move(const Board& board) -> size_t
         : 0;
     auto col = candidates[cand_idx];
     m_current_choices.push_back({ hash, col });
+
     return col;
 }
 

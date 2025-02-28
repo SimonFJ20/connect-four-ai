@@ -112,6 +112,9 @@ public:
     auto hash() const -> Hash;
     auto flipped_hash() const -> size_t;
 
+    auto win_possibilities_at_pos(Color color, uint16_t col, uint16_t row) const
+        -> size_t;
+
     auto as_mx1() const -> Mx1;
 
 private:
