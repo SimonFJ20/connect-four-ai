@@ -1,28 +1,29 @@
 from __future__ import annotations
 from piece import CROSS, CIRCLE
-from game import HumanPlayer, start_game, GameResult
-from ai import train_ai, AiPlayer
+from game import Human, start_game, GameResult
+from ai import DTModel, train
 
 
 def main():
-    ai = train_ai()
+    model = DTModel(CROSS)
+    train(model, iterations=100_000)
 
-    ai = AiPlayer(CROSS, ai)
-    player = HumanPlayer(CIRCLE)
+    player = Human(CIRCLE)
 
     while True:
         print("\nNew game")
-        result = start_game(ai, player, quiet=False)
+        result = start_game(p1=model, p2=player, quiet=False)
         match result:
-            case GameResult.Player1Won:
+            case GameResult.P1Won:
                 print("AI won!")
-            case GameResult.Player2Won:
+            case GameResult.P2Won:
                 print("Player won!")
             case GameResult.Draw:
                 print("Draw!")
 
 
-try:
-    main()
-except KeyboardInterrupt:
-    pass
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        pass
