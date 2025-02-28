@@ -46,7 +46,7 @@ class Board:
         return self.bitfield
 
     def board_filled(self) -> bool:
-        return all(pos for pos in range(9) if self.piece_at(pos) == EMPTY)
+        return all(self.piece_at(pos) != EMPTY for pos in range(9))
 
     def piece_has_won(self, piece: int) -> bool:
         # fmt: off

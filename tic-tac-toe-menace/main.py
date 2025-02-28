@@ -5,7 +5,11 @@ from dt_model import DTModel, train_dt_model
 
 def main():
     model = DTModel(CROSS)
+
     train_dt_model(model, iterations=100_000)
+    # model.save_to_file("model.json")
+
+    # model.load_from_file("model.json")
 
     player = Human(CIRCLE)
 
