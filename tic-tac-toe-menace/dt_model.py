@@ -22,16 +22,14 @@ class DTModel(Player):
         for choice in self.current_choices:
             self.choices[choice] -= 1
 
-    def interned_choice(self, choice: Board) -> Board:
-        flips = 2
-        for _ in range(flips):
-            rotations = 4
-            for _ in range(rotations):
-                if choice.as_key() in self.choices:
+    def prune_choice(self, choice: Board) -> Board:
+        for _ in range(2):
+            for _ in range(4):
+                if choice.hash() in self.choices:
                     return choice
                 choice.rotate()
             choice.flip()
-        self.choices[choice.as_key()] = 0
+        self.choices[choice.hash()] = 0
         return choice
 
     def viable_choices(self, piece: int, board: Board) -> list[tuple[int, int]]:
@@ -42,7 +40,7 @@ class DTModel(Player):
             return board.with_play(piece, pos)
 
         def interned_board(choice: Board) -> int:
-            return self.interned_choice(choice).as_key()
+            return self.prune_choice(choice).hash()
 
         # maybe a little spooky - a function that returns a function
         # the alternative was some really ugly lambdas that didn't sit right with me

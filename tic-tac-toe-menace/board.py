@@ -1,15 +1,15 @@
 from __future__ import annotations
 from piece import EMPTY, piece_board_str, piece_to_str
 
+PIECE_SIZE = 2
+PIECE_MASK = 0b11
 
 class Board:
-    PIECE_BIT_WIDTH = 2
-
     def __init__(self, bitfield=0) -> None:
         self.bitfield = bitfield
 
     def piece_at(self, pos: int) -> int:
-        return (self.bitfield >> pos * self.PIECE_BIT_WIDTH) & 0b11
+        return (self.bitfield >> pos * PIECE_SIZE) & PIECE_MASK
 
     def possible_plays(self) -> list[int]:
         return [pos for pos in range(9) if self.piece_at(pos) == EMPTY]
@@ -18,7 +18,7 @@ class Board:
         return Board(self.bitfield)
 
     def place_piece_at(self, piece: int, pos: int):
-        self.bitfield |= piece << (pos * self.PIECE_BIT_WIDTH)
+        self.bitfield |= piece << pos * PIECE_SIZE
 
     def with_play(self, piece: int, pos: int) -> Board:
         board = self.clone()
@@ -42,27 +42,27 @@ class Board:
         for pos, piece in enumerate(pieces):
             self.place_piece_at(piece, pos)
 
-    def as_key(self) -> int:
+    def hash(self) -> int:
         return self.bitfield
 
+    def board_filled(self) -> bool:
+        return all(pos for pos in range(9) if self.piece_at(pos) == EMPTY)
+
     def piece_has_won(self, piece: int) -> bool:
-        combos = [
-            (0, 1, 2),
-            (3, 4, 5),
-            (6, 7, 8),
-            (0, 3, 6),
-            (1, 4, 7),
-            (2, 5, 8),
-            (0, 4, 8),
-            (2, 4, 6),
+        # fmt: off
+        patterns = [
+            # horizontal
+            (0, 1, 2), (3, 4, 5),  (6, 7, 8),
+            # vertical
+            (0, 3, 6), (1, 4, 7),  (2, 5, 8),
+            # diagonal
+            (0, 4, 8), (2, 4, 6),
         ]
-        for combo in combos:
-            if all(self.piece_at(pos) == piece for pos in list(combo)):
+        # fmt: on
+        for pattern in patterns:
+            if all(self.piece_at(pos) == piece for pos in list(pattern)):
                 return True
         return False
-
-    def board_filled(self) -> bool:
-        return len(self.possible_plays()) == 0
 
     def __repr__(self) -> str:
         return (

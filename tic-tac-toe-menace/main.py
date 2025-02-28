@@ -1,6 +1,6 @@
 from piece import CROSS, CIRCLE
 from game import Human, start_game, GameResult
-from ai import DTModel, train_dt_model
+from dt_model import DTModel, train_dt_model
 
 
 def main():

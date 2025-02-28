@@ -2,7 +2,7 @@ EMPTY = 0
 CROSS = 1
 CIRCLE = 2
 
-def piece_to_colored_and_indexed_str(piece: int, pos: int) -> str:
+def piece_board_str(piece: int, pos: int) -> str:
     match piece:
         case 0:
             return f"\x1b[0;37m{pos}\x1b[0m"
